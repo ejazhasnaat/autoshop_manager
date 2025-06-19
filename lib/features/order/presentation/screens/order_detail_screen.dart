@@ -1,9 +1,10 @@
 // lib/features/order/presentation/screens/order_detail_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:autoshop_manager/features/order/presentation/order_providers.dart';
-import 'package:autoshop_manager/widgets/common_app_bar.dart'; // Add CommonAppBar import
-import 'package:intl/intl.dart'; // For formatting
+import 'package:autoshop_manager/widgets/common_app_bar.dart';
+import 'package:autoshop_manager/features/settings/presentation/settings_providers.dart'; // <--- NEW IMPORT
 
 class OrderDetailScreen extends ConsumerWidget {
   final int orderId;
@@ -13,15 +14,34 @@ class OrderDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final orderDetailsAsync = ref.watch(orderByIdProvider(orderId));
+    final currentCurrencySymbol = ref.watch(currentCurrencySymbolProvider); // <--- WATCH CURRENCY
 
     return Scaffold(
-      appBar: const CommonAppBar(
+      appBar: CommonAppBar(
         title: 'Order Details',
-        showBackButton: true, // <--- Show back button on detail screen
+        showBackButton: true,
+        customActions: [
+          orderDetailsAsync.when(
+            data: (orderWithDetails) {
+              if (orderWithDetails != null) {
+                return IconButton(
+                  icon: const Icon(Icons.print),
+                  onPressed: () {
+                    // TODO: Implement print functionality (e.g., generate PDF)
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Print functionality coming soon!')),
+                    );
+                  },
+                );
+              }
+              return const SizedBox.shrink();
+            },
+            loading: () => const CircularProgressIndicator.adaptive(),
+            error: (err, stack) => const SizedBox.shrink(),
+          ),
+        ],
       ),
       body: orderDetailsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (err, stack) => Center(child: Text('Error: $err')),
         data: (orderWithDetails) {
           if (orderWithDetails == null) {
             return const Center(child: Text('Order not found.'));
@@ -36,57 +56,56 @@ class OrderDetailScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Order Summary
                 Card(
+                  margin: const EdgeInsets.only(bottom: 24.0),
                   elevation: 2,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  margin: const EdgeInsets.only(bottom: 16),
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Order #${order.id}',
-                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+                          'Order Summary',
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                         ),
-                        const Divider(),
-                        _buildDetailRow(context, 'Date:', DateFormat('yyyy-MM-dd HH:mm').format(order.orderDate)),
-                        _buildDetailRow(context, 'Total Amount:', NumberFormat.currency(locale: 'en_US', symbol: '\$').format(order.totalAmount)),
-                        _buildDetailRow(context, 'Status:', order.status),
+                        const Divider(height: 24),
+                        _buildDetailRow(context, 'Order ID', '#${order.id}'),
+                        _buildDetailRow(context, 'Date', order.orderDate.toLocal().toString().split(' ')[0]),
+                        _buildDetailRow(context, 'Status', order.status),
+                        _buildDetailRow(context, 'Total Amount', '$currentCurrencySymbol${order.totalAmount.toStringAsFixed(2)}'), // <--- USE CURRENCY
                       ],
                     ),
                   ),
                 ),
-
-                // Customer Details
                 Card(
+                  margin: const EdgeInsets.only(bottom: 24.0),
                   elevation: 2,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  margin: const EdgeInsets.only(bottom: 16),
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Customer Details',
+                          'Customer Information',
                           style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                         ),
-                        const Divider(),
-                        _buildDetailRow(context, 'Name:', customer.name),
-                        _buildDetailRow(context, 'Phone:', customer.phoneNumber),
+                        const Divider(height: 24),
+                        _buildDetailRow(context, 'Name', customer.name),
+                        _buildDetailRow(context, 'Phone', customer.phoneNumber),
+                        if (customer.whatsappNumber != null && customer.whatsappNumber!.isNotEmpty)
+                          _buildDetailRow(context, 'WhatsApp', customer.whatsappNumber!),
                         if (customer.email != null && customer.email!.isNotEmpty)
-                          _buildDetailRow(context, 'Email:', customer.email!),
+                          _buildDetailRow(context, 'Email', customer.email!),
                         if (customer.address != null && customer.address!.isNotEmpty)
-                          _buildDetailRow(context, 'Address:', customer.address!),
+                          _buildDetailRow(context, 'Address', customer.address!),
                       ],
                     ),
                   ),
                 ),
-
-                // Order Items
                 Card(
+                  margin: const EdgeInsets.only(bottom: 24.0),
                   elevation: 2,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   child: Padding(
@@ -95,44 +114,34 @@ class OrderDetailScreen extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Order Items',
+                          'Items in Order',
                           style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                         ),
-                        const Divider(),
+                        const Divider(height: 24),
                         if (items.isEmpty)
-                          const Text('No items in this order.')
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 8.0),
+                            child: Text('No items in this order.'),
+                          )
                         else
                           ListView.builder(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
                             itemCount: items.length,
                             itemBuilder: (context, index) {
-                              final orderItem = items[index];
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 4.0),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            '${orderItem.inventoryItem.name} (x${orderItem.orderItem.quantity})',
-                                            style: Theme.of(context).textTheme.titleMedium,
-                                          ),
-                                          Text(
-                                            'Part #: ${orderItem.inventoryItem.partNumber}',
-                                            style: Theme.of(context).textTheme.bodySmall,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    Text(
-                                      NumberFormat.currency(locale: 'en_US', symbol: '\$').format(orderItem.orderItem.priceAtSale * orderItem.orderItem.quantity),
-                                      style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-                                    ),
-                                  ],
+                              final item = items[index];
+                              return Card(
+                                margin: const EdgeInsets.symmetric(vertical: 4.0),
+                                elevation: 1,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                child: ListTile(
+                                  title: Text(item.inventoryItem.name, style: Theme.of(context).textTheme.titleSmall),
+                                  subtitle: Text(
+                                    '${item.orderItem.quantity} x $currentCurrencySymbol${item.orderItem.priceAtSale.toStringAsFixed(2)} = $currentCurrencySymbol${(item.orderItem.quantity * item.orderItem.priceAtSale).toStringAsFixed(2)}', // <--- USE CURRENCY
+                                  ),
+                                  leading: CircleAvatar(
+                                    child: Text(item.orderItem.quantity.toString()),
+                                  ),
                                 ),
                               );
                             },
@@ -141,25 +150,12 @@ class OrderDetailScreen extends ConsumerWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: 20),
-                // Optional: Button to change order status
-                Center(
-                  child: ElevatedButton(
-                    onPressed: () {
-                      // Example: show a dialog to change status
-                      _showStatusChangeDialog(context, ref, order.id, order.status);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    child: const Text('Update Order Status'),
-                  ),
-                ),
               ],
             ),
           );
         },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (err, stack) => Center(child: Text('Error: $err')),
       ),
     );
   }
@@ -171,7 +167,7 @@ class OrderDetailScreen extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 120,
+            width: 120, // Fixed width for labels
             child: Text(
               label,
               style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
@@ -185,59 +181,6 @@ class OrderDetailScreen extends ConsumerWidget {
           ),
         ],
       ),
-    );
-  }
-
-  void _showStatusChangeDialog(BuildContext context, WidgetRef ref, int orderId, String currentStatus) {
-    String? selectedStatus = currentStatus;
-    showDialog(
-      context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          title: const Text('Change Order Status'),
-          content: StatefulBuilder(
-            builder: (BuildContext context, StateSetter setState) {
-              return DropdownButtonFormField<String>(
-                value: selectedStatus,
-                decoration: const InputDecoration(
-                  labelText: 'New Status',
-                  border: OutlineInputBorder(),
-                ),
-                items: <String>['Pending', 'Processing', 'Completed', 'Cancelled']
-                    .map<DropdownMenuItem<String>>((String value) {
-                  return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(value),
-                  );
-                }).toList(),
-                onChanged: (String? newValue) {
-                  setState(() {
-                    selectedStatus = newValue;
-                  });
-                },
-              );
-            },
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: selectedStatus == null || selectedStatus == currentStatus
-                  ? null
-                  : () async {
-                      Navigator.of(ctx).pop();
-                      await ref.read(orderNotifierProvider.notifier).updateOrderStatus(orderId, selectedStatus!);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Order status updated.')),
-                      );
-                    },
-              child: const Text('Update'),
-            ),
-          ],
-        );
-      },
     );
   }
 }

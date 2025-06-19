@@ -19,12 +19,16 @@ class Users extends Table {
 class InventoryItems extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get name => text().withLength(min: 2, max: 100)();
-  TextColumn get partNumber => text().unique().withLength(min: 1, max: 50)();
+  TextColumn get partNumber => text().nullable().unique().withLength(min: 1, max: 50)(); // <--- UPDATED: Made nullable
   TextColumn get supplier => text().nullable().withLength(max: 100)();
   RealColumn get costPrice => real()();
   RealColumn get salePrice => real()();
   IntColumn get quantity => integer().withDefault(const Constant(0))();
   TextColumn get stockLocation => text().nullable().withLength(max: 50)();
+  TextColumn get vehicleMake => text().nullable().withLength(max: 50)();
+  TextColumn get vehicleModel => text().nullable().withLength(max: 50)();
+  IntColumn get vehicleYearFrom => integer().nullable()();
+  IntColumn get vehicleYearTo => integer().nullable()();
 }
 
 @DataClassName('Customer')
@@ -94,7 +98,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6; // Keeping schema version at 6 for simplicity with regular db wipes
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -114,6 +118,12 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 5) {
         await m.createTable(vehicleModels);
+      }
+      if (from < 6) {
+        await m.addColumn(inventoryItems, inventoryItems.vehicleMake);
+        await m.addColumn(inventoryItems, inventoryItems.vehicleModel);
+        await m.addColumn(inventoryItems, inventoryItems.vehicleYearFrom);
+        await m.addColumn(inventoryItems, inventoryItems.vehicleYearTo);
       }
     },
   );

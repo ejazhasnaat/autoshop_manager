@@ -1,8 +1,7 @@
 // lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:autoshop_manager/core/router.dart'; // Your GoRouter configuration
-import 'package:autoshop_manager/config/app_theme.dart'; // <--- NEW IMPORT
+import 'package:autoshop_manager/core/router.dart'; // Import the appRouter
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,13 +13,23 @@ class MyApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final router = ref.watch(goRouterProvider); // Assuming goRouterProvider is in core/router.dart
-    
+    // As appRouter is a direct GoRouter instance (not a Riverpod Provider)
+    final router = appRouter; // Direct use of the GoRouter instance
+
     return MaterialApp.router(
-      title: 'Autoshop Manager',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme(), // <--- Use the theme from AppTheme class
       routerConfig: router,
+      title: 'Autoshop Manager',
+      theme: ThemeData(
+        colorSchemeSeed: Colors.blueGrey,
+        useMaterial3: true,
+        brightness: Brightness.light,
+      ),
+      darkTheme: ThemeData(
+        colorSchemeSeed: Colors.blueGrey,
+        useMaterial3: true,
+        brightness: Brightness.dark,
+      ),
+      themeMode: ThemeMode.system, // Follow system theme
     );
   }
 }

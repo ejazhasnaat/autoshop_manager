@@ -6,15 +6,17 @@ import 'package:autoshop_manager/core/constants/app_constants.dart'; // For appN
 import 'package:autoshop_manager/features/auth/presentation/auth_providers.dart'; // For authNotifierProvider
 
 class CommonAppBar extends ConsumerWidget implements PreferredSizeWidget {
-  final String? title; // Reverted to nullable title
+  final String? title;
   final bool showBackButton;
   final List<Widget>? customActions;
+  final PreferredSizeWidget? bottom; // <--- NEW: Added bottom property
 
   const CommonAppBar({
     super.key,
     this.title,
     this.showBackButton = false,
-    this.customActions, // Initialize customActions
+    this.customActions,
+    this.bottom, // Initialize bottom
   });
 
   @override
@@ -31,13 +33,13 @@ class CommonAppBar extends ConsumerWidget implements PreferredSizeWidget {
           child: Text(
             currentUserName,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).colorScheme.primary,
-            ),
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
           ),
         ),
       ),
-      // Hamburger settings icon (using PopupMenuButton)
+      // Hamburger settings icon (using PopupMenuButton for now)
       PopupMenuButton<String>(
         icon: const Icon(Icons.settings),
         onSelected: (String result) async {
@@ -48,68 +50,67 @@ class CommonAppBar extends ConsumerWidget implements PreferredSizeWidget {
             showAboutDialog(
               context: context,
               applicationName: AppConstants.appName,
-              applicationVersion: '1.0.0', // Consider making this dynamic
-              applicationLegalese:
-                  '© 2023 Autoshop Manager. All rights reserved.',
+              applicationVersion: '1.0.0',
+              applicationLegalese: '© 2023 Autoshop Manager. All rights reserved.',
             );
+          } else if (result == 'settings') {
+            context.go('/settings');
           }
         },
         itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
           const PopupMenuItem<String>(value: 'about', child: Text('About')),
+          const PopupMenuItem<String>(value: 'settings', child: Text('Settings')),
           const PopupMenuItem<String>(value: 'logout', child: Text('Logout')),
         ],
       ),
-      const SizedBox(width: 8.0), // Padding on the right
+      const SizedBox(width: 8.0),
     ];
 
-    // Combine custom actions with default actions
     List<Widget> combinedActions = [];
     if (customActions != null) {
-      combinedActions.addAll(customActions!); // Add custom actions first
+      combinedActions.addAll(customActions!);
     }
-    combinedActions.addAll(defaultActions); // Then add default actions
+    combinedActions.addAll(defaultActions);
 
     return AppBar(
       title: Text(
         title ?? AppConstants.appName,
         style: Theme.of(context).textTheme.headlineSmall?.copyWith(
           fontWeight: FontWeight.bold,
-          color: Theme.of(context).appBarTheme.foregroundColor, // Use appBarTheme foregroundColor
+          color: Theme.of(context).colorScheme.onSurface,
         ),
       ),
       centerTitle: false,
-      backgroundColor: Theme.of(context).appBarTheme.backgroundColor, // Use appBarTheme backgroundColor
-      foregroundColor: Theme.of(context).appBarTheme.foregroundColor, // Use appBarTheme foregroundColor
-      elevation: Theme.of(context).appBarTheme.elevation, // Use appBarTheme elevation
-      shadowColor: Theme.of(context).appBarTheme.shadowColor, // Use appBarTheme shadowColor
-      scrolledUnderElevation: Theme.of(context).appBarTheme.scrolledUnderElevation, // Use appBarTheme scrolledUnderElevation
-      automaticallyImplyLeading: false, // Control leading behavior explicitly
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      foregroundColor: Theme.of(context).colorScheme.onSurface,
+      elevation: 4,
+      shadowColor: Theme.of(context).colorScheme.shadow.withOpacity(0.2),
+      scrolledUnderElevation: 8,
+      automaticallyImplyLeading: false,
 
       leading: showBackButton
           ? IconButton(
-              // Show back button
               icon: const Icon(Icons.arrow_back),
               onPressed: () {
                 if (context.canPop()) {
                   context.pop();
                 } else {
-                  // Fallback: If cannot pop, go to home
                   context.go('/home');
                 }
               },
             )
           : IconButton(
-              // Show home icon if not showing back button
               icon: const Icon(Icons.home),
               onPressed: () {
-                context.go('/home'); // Navigate to home
+                context.go('/home');
               },
             ),
-      actions: combinedActions, // Use the combined actions list
+      actions: combinedActions,
+      bottom: bottom, // <--- NEW: Use the passed bottom widget
     );
   }
 
   @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
+  Size get preferredSize => Size.fromHeight(kToolbarHeight + (bottom?.preferredSize.height ?? 0.0)); // Adjust preferred size if bottom is present
 }
 

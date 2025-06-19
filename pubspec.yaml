@@ -55,6 +55,10 @@ dependencies:
 
   crypto: ^3.0.3
 
+  cloud_firestore: ^4.17.4 # Use a version compatible with your Flutter/Firebase setup
+  firebase_auth: ^4.16.0 # Use a version compatible with your Flutter/Firebase setup
+  firebase_core: ^2.32.0 # Ensure this is also present and compatible
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

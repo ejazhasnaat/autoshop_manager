@@ -3,8 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:autoshop_manager/features/service/presentation/service_providers.dart';
-import 'package:autoshop_manager/widgets/common_app_bar.dart'; // For CommonAppBar
-import 'package:intl/intl.dart'; // For currency formatting
+import 'package:autoshop_manager/widgets/common_app_bar.dart';
+import 'package:autoshop_manager/features/settings/presentation/settings_providers.dart'; // <--- NEW IMPORT
+
 
 class ServiceListScreen extends ConsumerWidget {
   const ServiceListScreen({super.key});
@@ -12,11 +13,13 @@ class ServiceListScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final servicesAsyncValue = ref.watch(serviceListProvider);
+    final currentCurrencySymbol = ref.watch(currentCurrencySymbolProvider); // <--- WATCH CURRENCY
 
     return Scaffold(
-      appBar: const CommonAppBar(title: 'Services'), // Use CommonAppBar
+      appBar: const CommonAppBar(title: 'Services'),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => context.go('/services/add'), // Navigate to add new service
+        onPressed: () => context.go('/services/add'),
+        tooltip: 'Add New Service',
         child: const Icon(Icons.add),
       ),
       body: servicesAsyncValue.when(
@@ -45,23 +48,24 @@ class ServiceListScreen extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 4),
+                      Text('Price: $currentCurrencySymbol${service.price.toStringAsFixed(2)}'), // <--- USE CURRENCY SYMBOL
                       if (service.description != null && service.description!.isNotEmpty)
-                        Text('Description: ${service.description}'),
-                      Text('Price: ${NumberFormat.currency(locale: 'en_US', symbol: '\$').format(service.price)}'),
-                      Text('Active: ${service.isActive ? 'Yes' : 'No'}'),
+                        Text('Description: ${service.description!}'),
+                      Text('Status: ${service.isActive ? 'Active' : 'Inactive'}'),
                     ],
                   ),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
-                        icon: Icon(Icons.edit, color: Theme.of(context).colorScheme.primary),
+                        icon: Icon(Icons.edit, color: Theme.of(context).colorScheme.primary, size: 20),
                         onPressed: () {
-                          context.go('/services/edit/${service.id}'); // Navigate to edit service
+                          context.go('/services/edit/${service.id}');
                         },
+                        tooltip: 'Edit Service',
                       ),
                       IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.red),
+                        icon: const Icon(Icons.delete, color: Colors.red, size: 20),
                         onPressed: () {
                           showDialog(
                             context: context,
@@ -75,8 +79,8 @@ class ServiceListScreen extends ConsumerWidget {
                                 ),
                                 ElevatedButton(
                                   onPressed: () {
-                                    ref.read(serviceNotifierProvider.notifier).deleteService(service.id);
-                                    Navigator.of(ctx).pop(); // Dismiss dialog
+                                    ref.read(serviceNotifierProvider.notifier).deleteService(service.id!);
+                                    Navigator.of(ctx).pop();
                                   },
                                   style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
                                   child: const Text('Delete'),
@@ -85,6 +89,7 @@ class ServiceListScreen extends ConsumerWidget {
                             ),
                           );
                         },
+                        tooltip: 'Delete Service',
                       ),
                     ],
                   ),

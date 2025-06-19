@@ -345,13 +345,13 @@ class $InventoryItemsTable extends InventoryItems
   late final GeneratedColumn<String> partNumber = GeneratedColumn<String>(
     'part_number',
     aliasedName,
-    false,
+    true,
     additionalChecks: GeneratedColumn.checkTextLength(
       minTextLength: 1,
       maxTextLength: 50,
     ),
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
     defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
   );
   static const VerificationMeta _supplierMeta = const VerificationMeta(
@@ -412,6 +412,52 @@ class $InventoryItemsTable extends InventoryItems
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _vehicleMakeMeta = const VerificationMeta(
+    'vehicleMake',
+  );
+  @override
+  late final GeneratedColumn<String> vehicleMake = GeneratedColumn<String>(
+    'vehicle_make',
+    aliasedName,
+    true,
+    additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 50),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _vehicleModelMeta = const VerificationMeta(
+    'vehicleModel',
+  );
+  @override
+  late final GeneratedColumn<String> vehicleModel = GeneratedColumn<String>(
+    'vehicle_model',
+    aliasedName,
+    true,
+    additionalChecks: GeneratedColumn.checkTextLength(maxTextLength: 50),
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _vehicleYearFromMeta = const VerificationMeta(
+    'vehicleYearFrom',
+  );
+  @override
+  late final GeneratedColumn<int> vehicleYearFrom = GeneratedColumn<int>(
+    'vehicle_year_from',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _vehicleYearToMeta = const VerificationMeta(
+    'vehicleYearTo',
+  );
+  @override
+  late final GeneratedColumn<int> vehicleYearTo = GeneratedColumn<int>(
+    'vehicle_year_to',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -422,6 +468,10 @@ class $InventoryItemsTable extends InventoryItems
     salePrice,
     quantity,
     stockLocation,
+    vehicleMake,
+    vehicleModel,
+    vehicleYearFrom,
+    vehicleYearTo,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -451,8 +501,6 @@ class $InventoryItemsTable extends InventoryItems
         _partNumberMeta,
         partNumber.isAcceptableOrUnknown(data['part_number']!, _partNumberMeta),
       );
-    } else if (isInserting) {
-      context.missing(_partNumberMeta);
     }
     if (data.containsKey('supplier')) {
       context.handle(
@@ -491,6 +539,42 @@ class $InventoryItemsTable extends InventoryItems
         ),
       );
     }
+    if (data.containsKey('vehicle_make')) {
+      context.handle(
+        _vehicleMakeMeta,
+        vehicleMake.isAcceptableOrUnknown(
+          data['vehicle_make']!,
+          _vehicleMakeMeta,
+        ),
+      );
+    }
+    if (data.containsKey('vehicle_model')) {
+      context.handle(
+        _vehicleModelMeta,
+        vehicleModel.isAcceptableOrUnknown(
+          data['vehicle_model']!,
+          _vehicleModelMeta,
+        ),
+      );
+    }
+    if (data.containsKey('vehicle_year_from')) {
+      context.handle(
+        _vehicleYearFromMeta,
+        vehicleYearFrom.isAcceptableOrUnknown(
+          data['vehicle_year_from']!,
+          _vehicleYearFromMeta,
+        ),
+      );
+    }
+    if (data.containsKey('vehicle_year_to')) {
+      context.handle(
+        _vehicleYearToMeta,
+        vehicleYearTo.isAcceptableOrUnknown(
+          data['vehicle_year_to']!,
+          _vehicleYearToMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -511,7 +595,7 @@ class $InventoryItemsTable extends InventoryItems
       partNumber: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}part_number'],
-      )!,
+      ),
       supplier: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}supplier'],
@@ -532,6 +616,22 @@ class $InventoryItemsTable extends InventoryItems
         DriftSqlType.string,
         data['${effectivePrefix}stock_location'],
       ),
+      vehicleMake: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}vehicle_make'],
+      ),
+      vehicleModel: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}vehicle_model'],
+      ),
+      vehicleYearFrom: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}vehicle_year_from'],
+      ),
+      vehicleYearTo: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}vehicle_year_to'],
+      ),
     );
   }
 
@@ -544,28 +644,38 @@ class $InventoryItemsTable extends InventoryItems
 class InventoryItem extends DataClass implements Insertable<InventoryItem> {
   final int id;
   final String name;
-  final String partNumber;
+  final String? partNumber;
   final String? supplier;
   final double costPrice;
   final double salePrice;
   final int quantity;
   final String? stockLocation;
+  final String? vehicleMake;
+  final String? vehicleModel;
+  final int? vehicleYearFrom;
+  final int? vehicleYearTo;
   const InventoryItem({
     required this.id,
     required this.name,
-    required this.partNumber,
+    this.partNumber,
     this.supplier,
     required this.costPrice,
     required this.salePrice,
     required this.quantity,
     this.stockLocation,
+    this.vehicleMake,
+    this.vehicleModel,
+    this.vehicleYearFrom,
+    this.vehicleYearTo,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     map['name'] = Variable<String>(name);
-    map['part_number'] = Variable<String>(partNumber);
+    if (!nullToAbsent || partNumber != null) {
+      map['part_number'] = Variable<String>(partNumber);
+    }
     if (!nullToAbsent || supplier != null) {
       map['supplier'] = Variable<String>(supplier);
     }
@@ -575,6 +685,18 @@ class InventoryItem extends DataClass implements Insertable<InventoryItem> {
     if (!nullToAbsent || stockLocation != null) {
       map['stock_location'] = Variable<String>(stockLocation);
     }
+    if (!nullToAbsent || vehicleMake != null) {
+      map['vehicle_make'] = Variable<String>(vehicleMake);
+    }
+    if (!nullToAbsent || vehicleModel != null) {
+      map['vehicle_model'] = Variable<String>(vehicleModel);
+    }
+    if (!nullToAbsent || vehicleYearFrom != null) {
+      map['vehicle_year_from'] = Variable<int>(vehicleYearFrom);
+    }
+    if (!nullToAbsent || vehicleYearTo != null) {
+      map['vehicle_year_to'] = Variable<int>(vehicleYearTo);
+    }
     return map;
   }
 
@@ -582,7 +704,9 @@ class InventoryItem extends DataClass implements Insertable<InventoryItem> {
     return InventoryItemsCompanion(
       id: Value(id),
       name: Value(name),
-      partNumber: Value(partNumber),
+      partNumber: partNumber == null && nullToAbsent
+          ? const Value.absent()
+          : Value(partNumber),
       supplier: supplier == null && nullToAbsent
           ? const Value.absent()
           : Value(supplier),
@@ -592,6 +716,18 @@ class InventoryItem extends DataClass implements Insertable<InventoryItem> {
       stockLocation: stockLocation == null && nullToAbsent
           ? const Value.absent()
           : Value(stockLocation),
+      vehicleMake: vehicleMake == null && nullToAbsent
+          ? const Value.absent()
+          : Value(vehicleMake),
+      vehicleModel: vehicleModel == null && nullToAbsent
+          ? const Value.absent()
+          : Value(vehicleModel),
+      vehicleYearFrom: vehicleYearFrom == null && nullToAbsent
+          ? const Value.absent()
+          : Value(vehicleYearFrom),
+      vehicleYearTo: vehicleYearTo == null && nullToAbsent
+          ? const Value.absent()
+          : Value(vehicleYearTo),
     );
   }
 
@@ -603,12 +739,16 @@ class InventoryItem extends DataClass implements Insertable<InventoryItem> {
     return InventoryItem(
       id: serializer.fromJson<int>(json['id']),
       name: serializer.fromJson<String>(json['name']),
-      partNumber: serializer.fromJson<String>(json['partNumber']),
+      partNumber: serializer.fromJson<String?>(json['partNumber']),
       supplier: serializer.fromJson<String?>(json['supplier']),
       costPrice: serializer.fromJson<double>(json['costPrice']),
       salePrice: serializer.fromJson<double>(json['salePrice']),
       quantity: serializer.fromJson<int>(json['quantity']),
       stockLocation: serializer.fromJson<String?>(json['stockLocation']),
+      vehicleMake: serializer.fromJson<String?>(json['vehicleMake']),
+      vehicleModel: serializer.fromJson<String?>(json['vehicleModel']),
+      vehicleYearFrom: serializer.fromJson<int?>(json['vehicleYearFrom']),
+      vehicleYearTo: serializer.fromJson<int?>(json['vehicleYearTo']),
     );
   }
   @override
@@ -617,28 +757,36 @@ class InventoryItem extends DataClass implements Insertable<InventoryItem> {
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
       'name': serializer.toJson<String>(name),
-      'partNumber': serializer.toJson<String>(partNumber),
+      'partNumber': serializer.toJson<String?>(partNumber),
       'supplier': serializer.toJson<String?>(supplier),
       'costPrice': serializer.toJson<double>(costPrice),
       'salePrice': serializer.toJson<double>(salePrice),
       'quantity': serializer.toJson<int>(quantity),
       'stockLocation': serializer.toJson<String?>(stockLocation),
+      'vehicleMake': serializer.toJson<String?>(vehicleMake),
+      'vehicleModel': serializer.toJson<String?>(vehicleModel),
+      'vehicleYearFrom': serializer.toJson<int?>(vehicleYearFrom),
+      'vehicleYearTo': serializer.toJson<int?>(vehicleYearTo),
     };
   }
 
   InventoryItem copyWith({
     int? id,
     String? name,
-    String? partNumber,
+    Value<String?> partNumber = const Value.absent(),
     Value<String?> supplier = const Value.absent(),
     double? costPrice,
     double? salePrice,
     int? quantity,
     Value<String?> stockLocation = const Value.absent(),
+    Value<String?> vehicleMake = const Value.absent(),
+    Value<String?> vehicleModel = const Value.absent(),
+    Value<int?> vehicleYearFrom = const Value.absent(),
+    Value<int?> vehicleYearTo = const Value.absent(),
   }) => InventoryItem(
     id: id ?? this.id,
     name: name ?? this.name,
-    partNumber: partNumber ?? this.partNumber,
+    partNumber: partNumber.present ? partNumber.value : this.partNumber,
     supplier: supplier.present ? supplier.value : this.supplier,
     costPrice: costPrice ?? this.costPrice,
     salePrice: salePrice ?? this.salePrice,
@@ -646,6 +794,14 @@ class InventoryItem extends DataClass implements Insertable<InventoryItem> {
     stockLocation: stockLocation.present
         ? stockLocation.value
         : this.stockLocation,
+    vehicleMake: vehicleMake.present ? vehicleMake.value : this.vehicleMake,
+    vehicleModel: vehicleModel.present ? vehicleModel.value : this.vehicleModel,
+    vehicleYearFrom: vehicleYearFrom.present
+        ? vehicleYearFrom.value
+        : this.vehicleYearFrom,
+    vehicleYearTo: vehicleYearTo.present
+        ? vehicleYearTo.value
+        : this.vehicleYearTo,
   );
   InventoryItem copyWithCompanion(InventoryItemsCompanion data) {
     return InventoryItem(
@@ -661,6 +817,18 @@ class InventoryItem extends DataClass implements Insertable<InventoryItem> {
       stockLocation: data.stockLocation.present
           ? data.stockLocation.value
           : this.stockLocation,
+      vehicleMake: data.vehicleMake.present
+          ? data.vehicleMake.value
+          : this.vehicleMake,
+      vehicleModel: data.vehicleModel.present
+          ? data.vehicleModel.value
+          : this.vehicleModel,
+      vehicleYearFrom: data.vehicleYearFrom.present
+          ? data.vehicleYearFrom.value
+          : this.vehicleYearFrom,
+      vehicleYearTo: data.vehicleYearTo.present
+          ? data.vehicleYearTo.value
+          : this.vehicleYearTo,
     );
   }
 
@@ -674,7 +842,11 @@ class InventoryItem extends DataClass implements Insertable<InventoryItem> {
           ..write('costPrice: $costPrice, ')
           ..write('salePrice: $salePrice, ')
           ..write('quantity: $quantity, ')
-          ..write('stockLocation: $stockLocation')
+          ..write('stockLocation: $stockLocation, ')
+          ..write('vehicleMake: $vehicleMake, ')
+          ..write('vehicleModel: $vehicleModel, ')
+          ..write('vehicleYearFrom: $vehicleYearFrom, ')
+          ..write('vehicleYearTo: $vehicleYearTo')
           ..write(')'))
         .toString();
   }
@@ -689,6 +861,10 @@ class InventoryItem extends DataClass implements Insertable<InventoryItem> {
     salePrice,
     quantity,
     stockLocation,
+    vehicleMake,
+    vehicleModel,
+    vehicleYearFrom,
+    vehicleYearTo,
   );
   @override
   bool operator ==(Object other) =>
@@ -701,18 +877,26 @@ class InventoryItem extends DataClass implements Insertable<InventoryItem> {
           other.costPrice == this.costPrice &&
           other.salePrice == this.salePrice &&
           other.quantity == this.quantity &&
-          other.stockLocation == this.stockLocation);
+          other.stockLocation == this.stockLocation &&
+          other.vehicleMake == this.vehicleMake &&
+          other.vehicleModel == this.vehicleModel &&
+          other.vehicleYearFrom == this.vehicleYearFrom &&
+          other.vehicleYearTo == this.vehicleYearTo);
 }
 
 class InventoryItemsCompanion extends UpdateCompanion<InventoryItem> {
   final Value<int> id;
   final Value<String> name;
-  final Value<String> partNumber;
+  final Value<String?> partNumber;
   final Value<String?> supplier;
   final Value<double> costPrice;
   final Value<double> salePrice;
   final Value<int> quantity;
   final Value<String?> stockLocation;
+  final Value<String?> vehicleMake;
+  final Value<String?> vehicleModel;
+  final Value<int?> vehicleYearFrom;
+  final Value<int?> vehicleYearTo;
   const InventoryItemsCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
@@ -722,18 +906,25 @@ class InventoryItemsCompanion extends UpdateCompanion<InventoryItem> {
     this.salePrice = const Value.absent(),
     this.quantity = const Value.absent(),
     this.stockLocation = const Value.absent(),
+    this.vehicleMake = const Value.absent(),
+    this.vehicleModel = const Value.absent(),
+    this.vehicleYearFrom = const Value.absent(),
+    this.vehicleYearTo = const Value.absent(),
   });
   InventoryItemsCompanion.insert({
     this.id = const Value.absent(),
     required String name,
-    required String partNumber,
+    this.partNumber = const Value.absent(),
     this.supplier = const Value.absent(),
     required double costPrice,
     required double salePrice,
     this.quantity = const Value.absent(),
     this.stockLocation = const Value.absent(),
+    this.vehicleMake = const Value.absent(),
+    this.vehicleModel = const Value.absent(),
+    this.vehicleYearFrom = const Value.absent(),
+    this.vehicleYearTo = const Value.absent(),
   }) : name = Value(name),
-       partNumber = Value(partNumber),
        costPrice = Value(costPrice),
        salePrice = Value(salePrice);
   static Insertable<InventoryItem> custom({
@@ -745,6 +936,10 @@ class InventoryItemsCompanion extends UpdateCompanion<InventoryItem> {
     Expression<double>? salePrice,
     Expression<int>? quantity,
     Expression<String>? stockLocation,
+    Expression<String>? vehicleMake,
+    Expression<String>? vehicleModel,
+    Expression<int>? vehicleYearFrom,
+    Expression<int>? vehicleYearTo,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -755,18 +950,26 @@ class InventoryItemsCompanion extends UpdateCompanion<InventoryItem> {
       if (salePrice != null) 'sale_price': salePrice,
       if (quantity != null) 'quantity': quantity,
       if (stockLocation != null) 'stock_location': stockLocation,
+      if (vehicleMake != null) 'vehicle_make': vehicleMake,
+      if (vehicleModel != null) 'vehicle_model': vehicleModel,
+      if (vehicleYearFrom != null) 'vehicle_year_from': vehicleYearFrom,
+      if (vehicleYearTo != null) 'vehicle_year_to': vehicleYearTo,
     });
   }
 
   InventoryItemsCompanion copyWith({
     Value<int>? id,
     Value<String>? name,
-    Value<String>? partNumber,
+    Value<String?>? partNumber,
     Value<String?>? supplier,
     Value<double>? costPrice,
     Value<double>? salePrice,
     Value<int>? quantity,
     Value<String?>? stockLocation,
+    Value<String?>? vehicleMake,
+    Value<String?>? vehicleModel,
+    Value<int?>? vehicleYearFrom,
+    Value<int?>? vehicleYearTo,
   }) {
     return InventoryItemsCompanion(
       id: id ?? this.id,
@@ -777,6 +980,10 @@ class InventoryItemsCompanion extends UpdateCompanion<InventoryItem> {
       salePrice: salePrice ?? this.salePrice,
       quantity: quantity ?? this.quantity,
       stockLocation: stockLocation ?? this.stockLocation,
+      vehicleMake: vehicleMake ?? this.vehicleMake,
+      vehicleModel: vehicleModel ?? this.vehicleModel,
+      vehicleYearFrom: vehicleYearFrom ?? this.vehicleYearFrom,
+      vehicleYearTo: vehicleYearTo ?? this.vehicleYearTo,
     );
   }
 
@@ -807,6 +1014,18 @@ class InventoryItemsCompanion extends UpdateCompanion<InventoryItem> {
     if (stockLocation.present) {
       map['stock_location'] = Variable<String>(stockLocation.value);
     }
+    if (vehicleMake.present) {
+      map['vehicle_make'] = Variable<String>(vehicleMake.value);
+    }
+    if (vehicleModel.present) {
+      map['vehicle_model'] = Variable<String>(vehicleModel.value);
+    }
+    if (vehicleYearFrom.present) {
+      map['vehicle_year_from'] = Variable<int>(vehicleYearFrom.value);
+    }
+    if (vehicleYearTo.present) {
+      map['vehicle_year_to'] = Variable<int>(vehicleYearTo.value);
+    }
     return map;
   }
 
@@ -820,7 +1039,11 @@ class InventoryItemsCompanion extends UpdateCompanion<InventoryItem> {
           ..write('costPrice: $costPrice, ')
           ..write('salePrice: $salePrice, ')
           ..write('quantity: $quantity, ')
-          ..write('stockLocation: $stockLocation')
+          ..write('stockLocation: $stockLocation, ')
+          ..write('vehicleMake: $vehicleMake, ')
+          ..write('vehicleModel: $vehicleModel, ')
+          ..write('vehicleYearFrom: $vehicleYearFrom, ')
+          ..write('vehicleYearTo: $vehicleYearTo')
           ..write(')'))
         .toString();
   }
@@ -3277,23 +3500,31 @@ typedef $$InventoryItemsTableCreateCompanionBuilder =
     InventoryItemsCompanion Function({
       Value<int> id,
       required String name,
-      required String partNumber,
+      Value<String?> partNumber,
       Value<String?> supplier,
       required double costPrice,
       required double salePrice,
       Value<int> quantity,
       Value<String?> stockLocation,
+      Value<String?> vehicleMake,
+      Value<String?> vehicleModel,
+      Value<int?> vehicleYearFrom,
+      Value<int?> vehicleYearTo,
     });
 typedef $$InventoryItemsTableUpdateCompanionBuilder =
     InventoryItemsCompanion Function({
       Value<int> id,
       Value<String> name,
-      Value<String> partNumber,
+      Value<String?> partNumber,
       Value<String?> supplier,
       Value<double> costPrice,
       Value<double> salePrice,
       Value<int> quantity,
       Value<String?> stockLocation,
+      Value<String?> vehicleMake,
+      Value<String?> vehicleModel,
+      Value<int?> vehicleYearFrom,
+      Value<int?> vehicleYearTo,
     });
 
 final class $$InventoryItemsTableReferences
@@ -3372,6 +3603,26 @@ class $$InventoryItemsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<String> get vehicleMake => $composableBuilder(
+    column: $table.vehicleMake,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get vehicleModel => $composableBuilder(
+    column: $table.vehicleModel,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get vehicleYearFrom => $composableBuilder(
+    column: $table.vehicleYearFrom,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get vehicleYearTo => $composableBuilder(
+    column: $table.vehicleYearTo,
+    builder: (column) => ColumnFilters(column),
+  );
+
   Expression<bool> orderItemsRefs(
     Expression<bool> Function($$OrderItemsTableFilterComposer f) f,
   ) {
@@ -3446,6 +3697,26 @@ class $$InventoryItemsTableOrderingComposer
     column: $table.stockLocation,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get vehicleMake => $composableBuilder(
+    column: $table.vehicleMake,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get vehicleModel => $composableBuilder(
+    column: $table.vehicleModel,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get vehicleYearFrom => $composableBuilder(
+    column: $table.vehicleYearFrom,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get vehicleYearTo => $composableBuilder(
+    column: $table.vehicleYearTo,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$InventoryItemsTableAnnotationComposer
@@ -3482,6 +3753,26 @@ class $$InventoryItemsTableAnnotationComposer
 
   GeneratedColumn<String> get stockLocation => $composableBuilder(
     column: $table.stockLocation,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get vehicleMake => $composableBuilder(
+    column: $table.vehicleMake,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get vehicleModel => $composableBuilder(
+    column: $table.vehicleModel,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get vehicleYearFrom => $composableBuilder(
+    column: $table.vehicleYearFrom,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get vehicleYearTo => $composableBuilder(
+    column: $table.vehicleYearTo,
     builder: (column) => column,
   );
 
@@ -3543,12 +3834,16 @@ class $$InventoryItemsTableTableManager
               ({
                 Value<int> id = const Value.absent(),
                 Value<String> name = const Value.absent(),
-                Value<String> partNumber = const Value.absent(),
+                Value<String?> partNumber = const Value.absent(),
                 Value<String?> supplier = const Value.absent(),
                 Value<double> costPrice = const Value.absent(),
                 Value<double> salePrice = const Value.absent(),
                 Value<int> quantity = const Value.absent(),
                 Value<String?> stockLocation = const Value.absent(),
+                Value<String?> vehicleMake = const Value.absent(),
+                Value<String?> vehicleModel = const Value.absent(),
+                Value<int?> vehicleYearFrom = const Value.absent(),
+                Value<int?> vehicleYearTo = const Value.absent(),
               }) => InventoryItemsCompanion(
                 id: id,
                 name: name,
@@ -3558,17 +3853,25 @@ class $$InventoryItemsTableTableManager
                 salePrice: salePrice,
                 quantity: quantity,
                 stockLocation: stockLocation,
+                vehicleMake: vehicleMake,
+                vehicleModel: vehicleModel,
+                vehicleYearFrom: vehicleYearFrom,
+                vehicleYearTo: vehicleYearTo,
               ),
           createCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
                 required String name,
-                required String partNumber,
+                Value<String?> partNumber = const Value.absent(),
                 Value<String?> supplier = const Value.absent(),
                 required double costPrice,
                 required double salePrice,
                 Value<int> quantity = const Value.absent(),
                 Value<String?> stockLocation = const Value.absent(),
+                Value<String?> vehicleMake = const Value.absent(),
+                Value<String?> vehicleModel = const Value.absent(),
+                Value<int?> vehicleYearFrom = const Value.absent(),
+                Value<int?> vehicleYearTo = const Value.absent(),
               }) => InventoryItemsCompanion.insert(
                 id: id,
                 name: name,
@@ -3578,6 +3881,10 @@ class $$InventoryItemsTableTableManager
                 salePrice: salePrice,
                 quantity: quantity,
                 stockLocation: stockLocation,
+                vehicleMake: vehicleMake,
+                vehicleModel: vehicleModel,
+                vehicleYearFrom: vehicleYearFrom,
+                vehicleYearTo: vehicleYearTo,
               ),
           withReferenceMapper: (p0) => p0
               .map(

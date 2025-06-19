@@ -39,226 +39,153 @@ class OrderRepository {
             .insert(
               OrdersCompanion.insert(
                 customerId: customerId,
-                orderDate: DateTime.now(), // Explicitly set current date/time
+                orderDate: DateTime.now(),
                 totalAmount: Value(totalAmount),
-                status: Value('Pending'), // Initial status
+                status: Value('Completed'), // Assuming all orders are completed upon creation for simplicity
               ),
             );
 
-        // 2. Add Order Items and Decrement Inventory
+        // 2. Create Order Items and decrement inventory
         for (var itemData in items) {
-          final itemId = itemData['itemId'] as int;
-          final quantity = itemData['quantity'] as int;
-          final priceAtSale = itemData['priceAtSale'] as double;
-
-          // Check if sufficient stock exists before proceeding
-          final inventoryItem = await _inventoryRepo.getInventoryItemById(
-            itemId,
-          );
-          if (inventoryItem == null || inventoryItem.quantity < quantity) {
-            throw Exception('Insufficient stock for item ID: $itemId');
-          }
-
-          // Add item to OrderItems
-          await _db
-              .into(_db.orderItems)
-              .insert(
+          await _db.into(_db.orderItems).insert(
                 OrderItemsCompanion.insert(
                   orderId: orderId,
-                  itemId: itemId,
-                  quantity: quantity,
-                  priceAtSale: priceAtSale,
+                  itemId: itemData['itemId'] as int,
+                  quantity: itemData['quantity'] as int,
+                  priceAtSale: itemData['priceAtSale'] as double,
                 ),
               );
-
-          // Decrement inventory stock
-          final success = await _inventoryRepo.decrementStock(itemId, quantity);
+          // Decrement stock for the inventory item
+          final success = await _inventoryRepo.decrementStock(
+            itemData['itemId'] as int,
+            itemData['quantity'] as int,
+          );
           if (!success) {
-            throw Exception('Failed to decrement stock for item ID: $itemId');
+            // If stock decrement fails, roll back the transaction
+            throw Exception('Failed to decrement stock for item ${itemData['itemId']}');
           }
         }
         return true;
       } catch (e) {
         print('Error creating order: $e');
+        // If any part of the transaction fails, it will be rolled back.
         return false;
       }
     });
   }
 
-  /// Retrieves an order by its ID, including its associated customer and items.
-  Future<OrderWithDetails?> getOrderById(int orderId) async {
-    // Step 1: Build the initial joined query
+  /// Retrieves a specific order along with its customer and all associated items (and their inventory details).
+  Future<OrderWithDetails?> getOrderWithDetails(int orderId) async {
+    // Use cascade operator to properly chain the where clause
     final query = _db.select(_db.orders).join([
-      innerJoin(
-        _db.customers,
-        _db.customers.id.equalsExp(_db.orders.customerId),
-      ),
-    ]);
+      innerJoin(_db.customers, _db.customers.id.equalsExp(_db.orders.customerId)),
+    ])..where(_db.orders.id.equals(orderId));
 
-    // Step 2: Apply the where clause and execute
-    final result = await (query..where(_db.orders.id.equals(orderId)))
-        .getSingleOrNull();
+    final result = await query.getSingleOrNull();
 
-    if (result != null) {
-      final order = result.readTable(_db.orders);
-      final customer = result.readTable(_db.customers);
-
-      // Step 3: Build the sub-query for order items
-      final orderItemsQuery = _db.select(_db.orderItems).join([
-        innerJoin(
-          _db.inventoryItems,
-          _db.inventoryItems.id.equalsExp(_db.orderItems.itemId),
-        ),
-      ]);
-
-      // Step 4: Apply where and map, then execute
-      final orderItems =
-          await (orderItemsQuery
-                ..where(_db.orderItems.orderId.equals(order.id)))
-              .map((row) {
-                return OrderItemWithInventory(
-                  orderItem: row.readTable(_db.orderItems),
-                  inventoryItem: row.readTable(_db.inventoryItems),
-                );
-              })
-              .get();
-
-      return OrderWithDetails(
-        order: order,
-        customer: customer,
-        items: orderItems,
-      );
+    if (result == null) {
+      return null;
     }
-    return null;
+
+    final order = result.readTable(_db.orders);
+    final customer = result.readTable(_db.customers);
+
+    // Now fetch order items for this order and join with inventory items
+    final itemQuery = _db.select(_db.orderItems).join([
+      innerJoin(_db.inventoryItems, _db.inventoryItems.id.equalsExp(_db.orderItems.itemId)),
+    ])..where(_db.orderItems.orderId.equals(order.id));
+
+    final itemResults = await itemQuery.get();
+
+    final orderItemsWithInventory = itemResults.map((row) {
+      return OrderItemWithInventory(
+        orderItem: row.readTable(_db.orderItems),
+        inventoryItem: row.readTable(_db.inventoryItems),
+      );
+    }).toList();
+
+    return OrderWithDetails(
+      order: order,
+      customer: customer,
+      items: orderItemsWithInventory,
+    );
   }
 
-  /// Retrieves all orders, optionally filtered by status, including customer details.
-  Future<List<OrderWithDetails>> getAllOrders({String? statusFilter}) async {
-    // Start building the query
-    var query = _db.select(_db.orders).join([
-      innerJoin(
-        _db.customers,
-        _db.customers.id.equalsExp(_db.orders.customerId),
-      ),
+  /// Retrieves all orders with their associated customer and items.
+  Future<List<OrderWithDetails>> getAllOrdersWithDetails() async { // Renamed for clarity
+    final query = _db.select(_db.orders).join([
+      innerJoin(_db.customers, _db.customers.id.equalsExp(_db.orders.customerId)),
     ]);
 
-    // Apply filter if present.
-    if (statusFilter != null && statusFilter.isNotEmpty) {
-      query = query..where(_db.orders.status.equals(statusFilter));
-    }
-
-    // Apply ordering.
-    query = query..orderBy([OrderingTerm.desc(_db.orders.orderDate)]);
-
-    final result = await query.get();
-
+    final results = await query.get();
     final List<OrderWithDetails> ordersWithDetails = [];
-    for (var row in result) {
+
+    for (final row in results) {
       final order = row.readTable(_db.orders);
       final customer = row.readTable(_db.customers);
 
-      // Construct the sub-query for order items
-      final orderItemsQuery = _db.select(_db.orderItems).join([
-        innerJoin(
-          _db.inventoryItems,
-          _db.inventoryItems.id.equalsExp(_db.orderItems.itemId),
-        ),
-      ]);
+      // Fetch items for each order
+      final itemQuery = _db.select(_db.orderItems).join([
+        innerJoin(_db.inventoryItems, _db.inventoryItems.id.equalsExp(_db.orderItems.itemId)),
+      ])..where(_db.orderItems.orderId.equals(order.id));
 
-      // Apply where and map, then execute
-      final orderItems =
-          await (orderItemsQuery
-                ..where(_db.orderItems.orderId.equals(order.id)))
-              .map((row) {
-                return OrderItemWithInventory(
-                  orderItem: row.readTable(_db.orderItems),
-                  inventoryItem: row.readTable(_db.inventoryItems),
-                );
-              })
-              .get();
+      final itemResults = await itemQuery.get();
 
-      ordersWithDetails.add(
-        OrderWithDetails(order: order, customer: customer, items: orderItems),
-      );
+      final orderItemsWithInventory = itemResults.map((itemRow) {
+        return OrderItemWithInventory(
+          orderItem: itemRow.readTable(_db.orderItems),
+          inventoryItem: itemRow.readTable(_db.inventoryItems),
+        );
+      }).toList();
+
+      ordersWithDetails.add(OrderWithDetails(
+        order: order,
+        customer: customer,
+        items: orderItemsWithInventory,
+      ));
     }
+    // Sort by order date descending
+    ordersWithDetails.sort((a, b) => b.order.orderDate.compareTo(a.order.orderDate));
     return ordersWithDetails;
+  }
+
+  /// Deletes an order and its associated order items.
+  Future<bool> deleteOrder(int orderId) async {
+    // Due to KeyAction.cascade on OrderItems, deleting the order will delete its items.
+    final count = await (_db.delete(_db.orders)..where((o) => o.id.equals(orderId))).go();
+    return count > 0;
   }
 
   /// Updates the status of an existing order.
   Future<bool> updateOrderStatus(int orderId, String newStatus) async {
-    final updatedRows =
-        await (_db.update(_db.orders)..where((o) => o.id.equals(orderId)))
-            .write(OrdersCompanion(status: Value(newStatus)));
-    return updatedRows > 0;
+    final order = await getOrderWithDetails(orderId);
+    if (order == null) {
+      return false;
+    }
+    final updatedOrder = order.order.copyWith(status: newStatus);
+    return _db.update(_db.orders).replace(updatedOrder);
   }
 
-  // --- NEW REPORTING METHODS FOR PHASE 4 ---
+  // --- Reporting Methods ---
 
-  /// Retrieves total sales amount over a given time range.
-  Future<double> getTotalSales({DateTime? startDate, DateTime? endDate}) async {
-    final totalAmountColumn = _db.orders.totalAmount
-        .sum(); // Define aggregate column
-    var query = _db.selectOnly(_db.orders)..addColumns([totalAmountColumn]);
+  /// Retrieves sales data grouped by inventory item.
+  Future<List<SalesByItem>> getSalesByItemReport() async {
+    // Use selectOnly for aggregate queries and let Drift infer the types
+    final totalQuantityColumn = _db.orderItems.quantity.sum();
+    final totalRevenueColumn = (_db.orderItems.quantity.dartCast<double>() * _db.orderItems.priceAtSale).sum();
 
-    Expression<bool> whereClause = const Constant(true);
-
-    if (startDate != null) {
-      whereClause =
-          whereClause & _db.orders.orderDate.isBiggerOrEqualValue(startDate);
-    }
-    if (endDate != null) {
-      whereClause =
-          whereClause & _db.orders.orderDate.isSmallerOrEqualValue(endDate);
-    }
-
-    query = query..where(whereClause);
-
-    final result = await query.getSingleOrNull();
-    return result?.read(totalAmountColumn) ??
-        0.0; // Read using the defined aggregate column
-  }
-
-  /// Retrieves sales by inventory item, showing total quantity sold and total revenue for each item.
-  Future<List<SalesByItem>> getSalesByItem({
-    DateTime? startDate,
-    DateTime? endDate,
-  }) async {
-    // Create properly typed aggregate columns
-    final totalQuantitySoldColumn = _db.orderItems.quantity.sum();
-    // Cast quantity to double before multiplication to ensure proper type
-    final totalRevenueColumn =
-        (_db.orderItems.quantity.cast<double>() * _db.orderItems.priceAtSale)
-            .sum();
-
-    var query = _db.selectOnly(_db.orderItems).join([
-      innerJoin(
-        _db.inventoryItems,
-        _db.inventoryItems.id.equalsExp(_db.orderItems.itemId),
-      ),
-      innerJoin(_db.orders, _db.orders.id.equalsExp(_db.orderItems.orderId)),
+    final query = _db.selectOnly(_db.orderItems).join([
+      innerJoin(_db.inventoryItems, _db.inventoryItems.id.equalsExp(_db.orderItems.itemId)),
     ]);
 
     query
       ..addColumns([
         _db.inventoryItems.id,
         _db.inventoryItems.name,
-        totalQuantitySoldColumn,
+        totalQuantityColumn,
         totalRevenueColumn,
       ])
       ..groupBy([_db.inventoryItems.id, _db.inventoryItems.name]);
-
-    Expression<bool> whereClause = const Constant(true);
-
-    if (startDate != null) {
-      whereClause =
-          whereClause & _db.orders.orderDate.isBiggerOrEqualValue(startDate);
-    }
-    if (endDate != null) {
-      whereClause =
-          whereClause & _db.orders.orderDate.isSmallerOrEqualValue(endDate);
-    }
-
-    query = query..where(whereClause);
 
     final results = await query.get();
 
@@ -266,26 +193,20 @@ class OrderRepository {
       return SalesByItem(
         itemId: row.read(_db.inventoryItems.id)!,
         itemName: row.read(_db.inventoryItems.name)!,
-        totalQuantitySold: row.read(totalQuantitySoldColumn) ?? 0,
-        totalRevenue: row.read(totalRevenueColumn) ?? 0.0,
+        totalQuantitySold: row.read(totalQuantityColumn) ?? 0,
+        totalRevenue: row.read(totalRevenueColumn)?.toDouble() ?? 0.0,
       );
     }).toList();
   }
 
-  /// Retrieves sales broken down by customer, showing total orders and total amount spent per customer.
-  Future<List<SalesByCustomer>> getSalesByCustomer({
-    DateTime? startDate,
-    DateTime? endDate,
-  }) async {
-    // Create properly typed aggregate columns
+  /// Retrieves sales data grouped by customer.
+  Future<List<SalesByCustomer>> getSalesByCustomerReport() async {
+    // Use selectOnly for aggregate queries and let Drift infer the types
     final totalOrdersColumn = _db.orders.id.count();
     final totalSpentColumn = _db.orders.totalAmount.sum();
 
-    var query = _db.selectOnly(_db.orders).join([
-      innerJoin(
-        _db.customers,
-        _db.customers.id.equalsExp(_db.orders.customerId),
-      ),
+    final query = _db.selectOnly(_db.orders).join([
+      innerJoin(_db.customers, _db.customers.id.equalsExp(_db.orders.customerId)),
     ]);
 
     query
@@ -296,19 +217,6 @@ class OrderRepository {
         totalSpentColumn,
       ])
       ..groupBy([_db.customers.id, _db.customers.name]);
-
-    Expression<bool> whereClause = const Constant(true);
-
-    if (startDate != null) {
-      whereClause =
-          whereClause & _db.orders.orderDate.isBiggerOrEqualValue(startDate);
-    }
-    if (endDate != null) {
-      whereClause =
-          whereClause & _db.orders.orderDate.isSmallerOrEqualValue(endDate);
-    }
-
-    query = query..where(whereClause);
 
     final results = await query.get();
 
@@ -321,8 +229,6 @@ class OrderRepository {
       );
     }).toList();
   }
-
-  // --- Helper classes for joined queries and reports ---
 }
 
 // Custom data class to hold joined Order, Customer, and OrderItems data
@@ -354,7 +260,7 @@ class SalesByItem {
   final int itemId;
   final String itemName;
   final int totalQuantitySold;
-  final double totalRevenue;
+  final double totalRevenue; // Keep as double, formatting in UI
 
   SalesByItem({
     required this.itemId,
@@ -369,7 +275,7 @@ class SalesByCustomer {
   final int customerId;
   final String customerName;
   final int totalOrders;
-  final double totalSpent;
+  final double totalSpent; // Keep as double, formatting in UI
 
   SalesByCustomer({
     required this.customerId,

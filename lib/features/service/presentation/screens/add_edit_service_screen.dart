@@ -2,13 +2,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:autoshop_manager/data/database/app_database.dart'; // For Service and ServicesCompanion
-import 'package:autoshop_manager/features/service/presentation/service_providers.dart'; // For serviceNotifierProvider and serviceByIdProvider
-import 'package:autoshop_manager/widgets/common_app_bar.dart'; // For CommonAppBar
-import 'package:drift/drift.dart' hide Column; // For Value
+import 'package:autoshop_manager/data/database/app_database.dart';
+import 'package:autoshop_manager/features/service/presentation/service_providers.dart';
+import 'package:autoshop_manager/widgets/common_app_bar.dart';
+import 'package:drift/drift.dart' hide Column;
+import 'package:autoshop_manager/features/settings/presentation/settings_providers.dart';
+import 'package:autoshop_manager/data/repositories/service_repository.dart'; // Ensure this import is present
+
 
 class AddEditServiceScreen extends ConsumerStatefulWidget {
-  final int? serviceId; // Null for add, has value for edit
+  final int? serviceId;
 
   const AddEditServiceScreen({super.key, this.serviceId});
 
@@ -21,10 +24,12 @@ class _AddEditServiceScreenState extends ConsumerState<AddEditServiceScreen> {
   late TextEditingController _nameController;
   late TextEditingController _descriptionController;
   late TextEditingController _priceController;
-  bool _isActive = true; // Default for new service
+  bool _isActive = true;
 
   bool _isLoading = false;
   Service? _currentService;
+
+  bool get _isEditing => widget.serviceId != null;
 
   @override
   void initState() {
@@ -33,7 +38,7 @@ class _AddEditServiceScreenState extends ConsumerState<AddEditServiceScreen> {
     _descriptionController = TextEditingController();
     _priceController = TextEditingController();
 
-    if (widget.serviceId != null) {
+    if (_isEditing) {
       _loadServiceData();
     }
   }
@@ -42,7 +47,8 @@ class _AddEditServiceScreenState extends ConsumerState<AddEditServiceScreen> {
     setState(() {
       _isLoading = true;
     });
-    _currentService = await ref.read(serviceByIdProvider(widget.serviceId!).future); // Fetch service data
+    // Correct way to read provider in ConsumerState
+    _currentService = await ref.read(serviceRepositoryProvider).getServiceById(widget.serviceId!);
     if (_currentService != null) {
       _nameController.text = _currentService!.name;
       _descriptionController.text = _currentService!.description ?? '';
@@ -70,25 +76,29 @@ class _AddEditServiceScreenState extends ConsumerState<AddEditServiceScreen> {
 
       final serviceNotifier = ref.read(serviceNotifierProvider.notifier);
 
+      // This is for adding a new service (using ServicesCompanion)
+      final companion = ServicesCompanion(
+        id: _isEditing ? Value(widget.serviceId!) : const Value.absent(),
+        name: Value(_nameController.text),
+        // Use Value.ofNullable when constructing ServicesCompanion
+        description: Value.ofNullable(_descriptionController.text.isEmpty ? null : _descriptionController.text),
+        price: Value(double.parse(_priceController.text)),
+        isActive: Value(_isActive),
+      );
+
       bool success;
-      if (widget.serviceId == null) {
-        // Add new service
-        final newServiceCompanion = ServicesCompanion(
-          name: Value(_nameController.text),
-          description: Value(_descriptionController.text.isNotEmpty ? _descriptionController.text : null),
-          price: Value(double.parse(_priceController.text)),
-          isActive: Value(_isActive),
-        );
-        success = await serviceNotifier.addService(newServiceCompanion);
-      } else {
-        // Update existing service
+      if (_isEditing) {
+        // This is for updating an existing service (using Service.copyWith)
         final updatedService = _currentService!.copyWith(
           name: _nameController.text,
-          description: Value(_descriptionController.text.isNotEmpty ? _descriptionController.text : null),
+          // <--- FIX: Also use Value.ofNullable for copyWith when updating nullable fields!
+          description: Value.ofNullable(_descriptionController.text.isEmpty ? null : _descriptionController.text),
           price: double.parse(_priceController.text),
           isActive: _isActive,
         );
         success = await serviceNotifier.updateService(updatedService);
+      } else {
+        success = await serviceNotifier.addService(companion);
       }
 
       setState(() {
@@ -97,12 +107,12 @@ class _AddEditServiceScreenState extends ConsumerState<AddEditServiceScreen> {
 
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(widget.serviceId == null ? 'Service added successfully!' : 'Service updated successfully!')),
+          SnackBar(content: Text(_isEditing ? 'Service updated!' : 'Service added!')),
         );
-        context.pop(); // Go back to list
+        context.pop();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(widget.serviceId == null ? 'Failed to add service.' : 'Failed to update service.')),
+          SnackBar(content: Text(_isEditing ? 'Failed to update service.' : 'Failed to add service.')),
         );
       }
     }
@@ -110,12 +120,14 @@ class _AddEditServiceScreenState extends ConsumerState<AddEditServiceScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final currentCurrencySymbol = ref.watch(currentCurrencySymbolProvider);
+
     return Scaffold(
       appBar: CommonAppBar(
-        title: widget.serviceId == null ? 'Add New Service' : 'Edit Service',
-        showBackButton: true, // Show back button on add/edit screen
+        title: _isEditing ? 'Edit Service' : 'Add Service',
+        showBackButton: true,
       ),
-      body: _isLoading && widget.serviceId != null
+      body: _isLoading && _isEditing
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16.0),
@@ -126,7 +138,7 @@ class _AddEditServiceScreenState extends ConsumerState<AddEditServiceScreen> {
                   children: [
                     TextFormField(
                       controller: _nameController,
-                      decoration: const InputDecoration(labelText: 'Service Name'),
+                      decoration: const InputDecoration(labelText: 'Service Name*'),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return 'Please enter service name';
@@ -143,28 +155,24 @@ class _AddEditServiceScreenState extends ConsumerState<AddEditServiceScreen> {
                     const SizedBox(height: 16),
                     TextFormField(
                       controller: _priceController,
-                      decoration: const InputDecoration(labelText: 'Price'),
+                      decoration: InputDecoration(labelText: 'Price*', prefixText: '$currentCurrencySymbol '),
                       keyboardType: TextInputType.number,
                       validator: (value) {
-                        if (value == null || double.tryParse(value) == null) {
+                        if (value == null || value.isEmpty || double.tryParse(value) == null) {
                           return 'Please enter a valid price';
                         }
                         return null;
                       },
                     ),
                     const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Checkbox(
-                          value: _isActive,
-                          onChanged: (bool? newValue) {
-                            setState(() {
-                              _isActive = newValue ?? false;
-                            });
-                          },
-                        ),
-                        const Text('Service is Active'),
-                      ],
+                    SwitchListTile(
+                      title: const Text('Service is Active'),
+                      value: _isActive,
+                      onChanged: (bool newValue) {
+                        setState(() {
+                          _isActive = newValue;
+                        });
+                      },
                     ),
                     const SizedBox(height: 24),
                     SizedBox(
@@ -173,7 +181,7 @@ class _AddEditServiceScreenState extends ConsumerState<AddEditServiceScreen> {
                         onPressed: _isLoading ? null : _saveService,
                         child: _isLoading
                             ? const CircularProgressIndicator.adaptive(strokeWidth: 2)
-                            : Text(widget.serviceId == null ? 'Add Service' : 'Update Service'),
+                            : Text(_isEditing ? 'Update Service' : 'Add Service'),
                       ),
                     ),
                   ],
