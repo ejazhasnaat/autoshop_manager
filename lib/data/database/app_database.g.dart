@@ -3,6 +3,17 @@
 part of 'app_database.dart';
 
 // ignore_for_file: type=lint
+mixin _$ServiceHistoryDaoMixin on DatabaseAccessor<AppDatabase> {
+  $CustomersTable get customers => attachedDatabase.customers;
+  $VehiclesTable get vehicles => attachedDatabase.vehicles;
+  $ServiceHistoriesTable get serviceHistories =>
+      attachedDatabase.serviceHistories;
+}
+mixin _$VehicleDaoMixin on DatabaseAccessor<AppDatabase> {
+  $CustomersTable get customers => attachedDatabase.customers;
+  $VehiclesTable get vehicles => attachedDatabase.vehicles;
+}
+
 class $UsersTable extends Users with TableInfo<$UsersTable, User> {
   @override
   final GeneratedDatabase attachedDatabase;
@@ -1552,6 +1563,106 @@ class $VehiclesTable extends Vehicles with TableInfo<$VehiclesTable, Vehicle> {
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _currentMileageMeta = const VerificationMeta(
+    'currentMileage',
+  );
+  @override
+  late final GeneratedColumn<int> currentMileage = GeneratedColumn<int>(
+    'current_mileage',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lastGeneralServiceDateMeta =
+      const VerificationMeta('lastGeneralServiceDate');
+  @override
+  late final GeneratedColumn<DateTime> lastGeneralServiceDate =
+      GeneratedColumn<DateTime>(
+        'last_general_service_date',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _lastEngineOilChangeDateMeta =
+      const VerificationMeta('lastEngineOilChangeDate');
+  @override
+  late final GeneratedColumn<DateTime> lastEngineOilChangeDate =
+      GeneratedColumn<DateTime>(
+        'last_engine_oil_change_date',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _lastGearOilChangeDateMeta =
+      const VerificationMeta('lastGearOilChangeDate');
+  @override
+  late final GeneratedColumn<DateTime> lastGearOilChangeDate =
+      GeneratedColumn<DateTime>(
+        'last_gear_oil_change_date',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _lastGeneralServiceMileageMeta =
+      const VerificationMeta('lastGeneralServiceMileage');
+  @override
+  late final GeneratedColumn<int> lastGeneralServiceMileage =
+      GeneratedColumn<int>(
+        'last_general_service_mileage',
+        aliasedName,
+        true,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _lastEngineOilChangeMileageMeta =
+      const VerificationMeta('lastEngineOilChangeMileage');
+  @override
+  late final GeneratedColumn<int> lastEngineOilChangeMileage =
+      GeneratedColumn<int>(
+        'last_engine_oil_change_mileage',
+        aliasedName,
+        true,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _lastGearOilChangeMileageMeta =
+      const VerificationMeta('lastGearOilChangeMileage');
+  @override
+  late final GeneratedColumn<int> lastGearOilChangeMileage =
+      GeneratedColumn<int>(
+        'last_gear_oil_change_mileage',
+        aliasedName,
+        true,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _nextReminderDateMeta = const VerificationMeta(
+    'nextReminderDate',
+  );
+  @override
+  late final GeneratedColumn<DateTime> nextReminderDate =
+      GeneratedColumn<DateTime>(
+        'next_reminder_date',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _nextReminderTypeMeta = const VerificationMeta(
+    'nextReminderType',
+  );
+  @override
+  late final GeneratedColumn<String> nextReminderType = GeneratedColumn<String>(
+    'next_reminder_type',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1560,6 +1671,15 @@ class $VehiclesTable extends Vehicles with TableInfo<$VehiclesTable, Vehicle> {
     make,
     model,
     year,
+    currentMileage,
+    lastGeneralServiceDate,
+    lastEngineOilChangeDate,
+    lastGearOilChangeDate,
+    lastGeneralServiceMileage,
+    lastEngineOilChangeMileage,
+    lastGearOilChangeMileage,
+    nextReminderDate,
+    nextReminderType,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1613,6 +1733,87 @@ class $VehiclesTable extends Vehicles with TableInfo<$VehiclesTable, Vehicle> {
         year.isAcceptableOrUnknown(data['year']!, _yearMeta),
       );
     }
+    if (data.containsKey('current_mileage')) {
+      context.handle(
+        _currentMileageMeta,
+        currentMileage.isAcceptableOrUnknown(
+          data['current_mileage']!,
+          _currentMileageMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_general_service_date')) {
+      context.handle(
+        _lastGeneralServiceDateMeta,
+        lastGeneralServiceDate.isAcceptableOrUnknown(
+          data['last_general_service_date']!,
+          _lastGeneralServiceDateMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_engine_oil_change_date')) {
+      context.handle(
+        _lastEngineOilChangeDateMeta,
+        lastEngineOilChangeDate.isAcceptableOrUnknown(
+          data['last_engine_oil_change_date']!,
+          _lastEngineOilChangeDateMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_gear_oil_change_date')) {
+      context.handle(
+        _lastGearOilChangeDateMeta,
+        lastGearOilChangeDate.isAcceptableOrUnknown(
+          data['last_gear_oil_change_date']!,
+          _lastGearOilChangeDateMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_general_service_mileage')) {
+      context.handle(
+        _lastGeneralServiceMileageMeta,
+        lastGeneralServiceMileage.isAcceptableOrUnknown(
+          data['last_general_service_mileage']!,
+          _lastGeneralServiceMileageMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_engine_oil_change_mileage')) {
+      context.handle(
+        _lastEngineOilChangeMileageMeta,
+        lastEngineOilChangeMileage.isAcceptableOrUnknown(
+          data['last_engine_oil_change_mileage']!,
+          _lastEngineOilChangeMileageMeta,
+        ),
+      );
+    }
+    if (data.containsKey('last_gear_oil_change_mileage')) {
+      context.handle(
+        _lastGearOilChangeMileageMeta,
+        lastGearOilChangeMileage.isAcceptableOrUnknown(
+          data['last_gear_oil_change_mileage']!,
+          _lastGearOilChangeMileageMeta,
+        ),
+      );
+    }
+    if (data.containsKey('next_reminder_date')) {
+      context.handle(
+        _nextReminderDateMeta,
+        nextReminderDate.isAcceptableOrUnknown(
+          data['next_reminder_date']!,
+          _nextReminderDateMeta,
+        ),
+      );
+    }
+    if (data.containsKey('next_reminder_type')) {
+      context.handle(
+        _nextReminderTypeMeta,
+        nextReminderType.isAcceptableOrUnknown(
+          data['next_reminder_type']!,
+          _nextReminderTypeMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -1646,6 +1847,42 @@ class $VehiclesTable extends Vehicles with TableInfo<$VehiclesTable, Vehicle> {
         DriftSqlType.int,
         data['${effectivePrefix}year'],
       ),
+      currentMileage: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}current_mileage'],
+      ),
+      lastGeneralServiceDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_general_service_date'],
+      ),
+      lastEngineOilChangeDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_engine_oil_change_date'],
+      ),
+      lastGearOilChangeDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_gear_oil_change_date'],
+      ),
+      lastGeneralServiceMileage: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}last_general_service_mileage'],
+      ),
+      lastEngineOilChangeMileage: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}last_engine_oil_change_mileage'],
+      ),
+      lastGearOilChangeMileage: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}last_gear_oil_change_mileage'],
+      ),
+      nextReminderDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}next_reminder_date'],
+      ),
+      nextReminderType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}next_reminder_type'],
+      ),
     );
   }
 
@@ -1662,6 +1899,15 @@ class Vehicle extends DataClass implements Insertable<Vehicle> {
   final String? make;
   final String? model;
   final int? year;
+  final int? currentMileage;
+  final DateTime? lastGeneralServiceDate;
+  final DateTime? lastEngineOilChangeDate;
+  final DateTime? lastGearOilChangeDate;
+  final int? lastGeneralServiceMileage;
+  final int? lastEngineOilChangeMileage;
+  final int? lastGearOilChangeMileage;
+  final DateTime? nextReminderDate;
+  final String? nextReminderType;
   const Vehicle({
     required this.id,
     required this.customerId,
@@ -1669,6 +1915,15 @@ class Vehicle extends DataClass implements Insertable<Vehicle> {
     this.make,
     this.model,
     this.year,
+    this.currentMileage,
+    this.lastGeneralServiceDate,
+    this.lastEngineOilChangeDate,
+    this.lastGearOilChangeDate,
+    this.lastGeneralServiceMileage,
+    this.lastEngineOilChangeMileage,
+    this.lastGearOilChangeMileage,
+    this.nextReminderDate,
+    this.nextReminderType,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1685,6 +1940,45 @@ class Vehicle extends DataClass implements Insertable<Vehicle> {
     if (!nullToAbsent || year != null) {
       map['year'] = Variable<int>(year);
     }
+    if (!nullToAbsent || currentMileage != null) {
+      map['current_mileage'] = Variable<int>(currentMileage);
+    }
+    if (!nullToAbsent || lastGeneralServiceDate != null) {
+      map['last_general_service_date'] = Variable<DateTime>(
+        lastGeneralServiceDate,
+      );
+    }
+    if (!nullToAbsent || lastEngineOilChangeDate != null) {
+      map['last_engine_oil_change_date'] = Variable<DateTime>(
+        lastEngineOilChangeDate,
+      );
+    }
+    if (!nullToAbsent || lastGearOilChangeDate != null) {
+      map['last_gear_oil_change_date'] = Variable<DateTime>(
+        lastGearOilChangeDate,
+      );
+    }
+    if (!nullToAbsent || lastGeneralServiceMileage != null) {
+      map['last_general_service_mileage'] = Variable<int>(
+        lastGeneralServiceMileage,
+      );
+    }
+    if (!nullToAbsent || lastEngineOilChangeMileage != null) {
+      map['last_engine_oil_change_mileage'] = Variable<int>(
+        lastEngineOilChangeMileage,
+      );
+    }
+    if (!nullToAbsent || lastGearOilChangeMileage != null) {
+      map['last_gear_oil_change_mileage'] = Variable<int>(
+        lastGearOilChangeMileage,
+      );
+    }
+    if (!nullToAbsent || nextReminderDate != null) {
+      map['next_reminder_date'] = Variable<DateTime>(nextReminderDate);
+    }
+    if (!nullToAbsent || nextReminderType != null) {
+      map['next_reminder_type'] = Variable<String>(nextReminderType);
+    }
     return map;
   }
 
@@ -1698,6 +1992,35 @@ class Vehicle extends DataClass implements Insertable<Vehicle> {
           ? const Value.absent()
           : Value(model),
       year: year == null && nullToAbsent ? const Value.absent() : Value(year),
+      currentMileage: currentMileage == null && nullToAbsent
+          ? const Value.absent()
+          : Value(currentMileage),
+      lastGeneralServiceDate: lastGeneralServiceDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastGeneralServiceDate),
+      lastEngineOilChangeDate: lastEngineOilChangeDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastEngineOilChangeDate),
+      lastGearOilChangeDate: lastGearOilChangeDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastGearOilChangeDate),
+      lastGeneralServiceMileage:
+          lastGeneralServiceMileage == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastGeneralServiceMileage),
+      lastEngineOilChangeMileage:
+          lastEngineOilChangeMileage == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastEngineOilChangeMileage),
+      lastGearOilChangeMileage: lastGearOilChangeMileage == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastGearOilChangeMileage),
+      nextReminderDate: nextReminderDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(nextReminderDate),
+      nextReminderType: nextReminderType == null && nullToAbsent
+          ? const Value.absent()
+          : Value(nextReminderType),
     );
   }
 
@@ -1715,6 +2038,29 @@ class Vehicle extends DataClass implements Insertable<Vehicle> {
       make: serializer.fromJson<String?>(json['make']),
       model: serializer.fromJson<String?>(json['model']),
       year: serializer.fromJson<int?>(json['year']),
+      currentMileage: serializer.fromJson<int?>(json['currentMileage']),
+      lastGeneralServiceDate: serializer.fromJson<DateTime?>(
+        json['lastGeneralServiceDate'],
+      ),
+      lastEngineOilChangeDate: serializer.fromJson<DateTime?>(
+        json['lastEngineOilChangeDate'],
+      ),
+      lastGearOilChangeDate: serializer.fromJson<DateTime?>(
+        json['lastGearOilChangeDate'],
+      ),
+      lastGeneralServiceMileage: serializer.fromJson<int?>(
+        json['lastGeneralServiceMileage'],
+      ),
+      lastEngineOilChangeMileage: serializer.fromJson<int?>(
+        json['lastEngineOilChangeMileage'],
+      ),
+      lastGearOilChangeMileage: serializer.fromJson<int?>(
+        json['lastGearOilChangeMileage'],
+      ),
+      nextReminderDate: serializer.fromJson<DateTime?>(
+        json['nextReminderDate'],
+      ),
+      nextReminderType: serializer.fromJson<String?>(json['nextReminderType']),
     );
   }
   @override
@@ -1727,6 +2073,27 @@ class Vehicle extends DataClass implements Insertable<Vehicle> {
       'make': serializer.toJson<String?>(make),
       'model': serializer.toJson<String?>(model),
       'year': serializer.toJson<int?>(year),
+      'currentMileage': serializer.toJson<int?>(currentMileage),
+      'lastGeneralServiceDate': serializer.toJson<DateTime?>(
+        lastGeneralServiceDate,
+      ),
+      'lastEngineOilChangeDate': serializer.toJson<DateTime?>(
+        lastEngineOilChangeDate,
+      ),
+      'lastGearOilChangeDate': serializer.toJson<DateTime?>(
+        lastGearOilChangeDate,
+      ),
+      'lastGeneralServiceMileage': serializer.toJson<int?>(
+        lastGeneralServiceMileage,
+      ),
+      'lastEngineOilChangeMileage': serializer.toJson<int?>(
+        lastEngineOilChangeMileage,
+      ),
+      'lastGearOilChangeMileage': serializer.toJson<int?>(
+        lastGearOilChangeMileage,
+      ),
+      'nextReminderDate': serializer.toJson<DateTime?>(nextReminderDate),
+      'nextReminderType': serializer.toJson<String?>(nextReminderType),
     };
   }
 
@@ -1737,6 +2104,15 @@ class Vehicle extends DataClass implements Insertable<Vehicle> {
     Value<String?> make = const Value.absent(),
     Value<String?> model = const Value.absent(),
     Value<int?> year = const Value.absent(),
+    Value<int?> currentMileage = const Value.absent(),
+    Value<DateTime?> lastGeneralServiceDate = const Value.absent(),
+    Value<DateTime?> lastEngineOilChangeDate = const Value.absent(),
+    Value<DateTime?> lastGearOilChangeDate = const Value.absent(),
+    Value<int?> lastGeneralServiceMileage = const Value.absent(),
+    Value<int?> lastEngineOilChangeMileage = const Value.absent(),
+    Value<int?> lastGearOilChangeMileage = const Value.absent(),
+    Value<DateTime?> nextReminderDate = const Value.absent(),
+    Value<String?> nextReminderType = const Value.absent(),
   }) => Vehicle(
     id: id ?? this.id,
     customerId: customerId ?? this.customerId,
@@ -1744,6 +2120,33 @@ class Vehicle extends DataClass implements Insertable<Vehicle> {
     make: make.present ? make.value : this.make,
     model: model.present ? model.value : this.model,
     year: year.present ? year.value : this.year,
+    currentMileage: currentMileage.present
+        ? currentMileage.value
+        : this.currentMileage,
+    lastGeneralServiceDate: lastGeneralServiceDate.present
+        ? lastGeneralServiceDate.value
+        : this.lastGeneralServiceDate,
+    lastEngineOilChangeDate: lastEngineOilChangeDate.present
+        ? lastEngineOilChangeDate.value
+        : this.lastEngineOilChangeDate,
+    lastGearOilChangeDate: lastGearOilChangeDate.present
+        ? lastGearOilChangeDate.value
+        : this.lastGearOilChangeDate,
+    lastGeneralServiceMileage: lastGeneralServiceMileage.present
+        ? lastGeneralServiceMileage.value
+        : this.lastGeneralServiceMileage,
+    lastEngineOilChangeMileage: lastEngineOilChangeMileage.present
+        ? lastEngineOilChangeMileage.value
+        : this.lastEngineOilChangeMileage,
+    lastGearOilChangeMileage: lastGearOilChangeMileage.present
+        ? lastGearOilChangeMileage.value
+        : this.lastGearOilChangeMileage,
+    nextReminderDate: nextReminderDate.present
+        ? nextReminderDate.value
+        : this.nextReminderDate,
+    nextReminderType: nextReminderType.present
+        ? nextReminderType.value
+        : this.nextReminderType,
   );
   Vehicle copyWithCompanion(VehiclesCompanion data) {
     return Vehicle(
@@ -1757,6 +2160,33 @@ class Vehicle extends DataClass implements Insertable<Vehicle> {
       make: data.make.present ? data.make.value : this.make,
       model: data.model.present ? data.model.value : this.model,
       year: data.year.present ? data.year.value : this.year,
+      currentMileage: data.currentMileage.present
+          ? data.currentMileage.value
+          : this.currentMileage,
+      lastGeneralServiceDate: data.lastGeneralServiceDate.present
+          ? data.lastGeneralServiceDate.value
+          : this.lastGeneralServiceDate,
+      lastEngineOilChangeDate: data.lastEngineOilChangeDate.present
+          ? data.lastEngineOilChangeDate.value
+          : this.lastEngineOilChangeDate,
+      lastGearOilChangeDate: data.lastGearOilChangeDate.present
+          ? data.lastGearOilChangeDate.value
+          : this.lastGearOilChangeDate,
+      lastGeneralServiceMileage: data.lastGeneralServiceMileage.present
+          ? data.lastGeneralServiceMileage.value
+          : this.lastGeneralServiceMileage,
+      lastEngineOilChangeMileage: data.lastEngineOilChangeMileage.present
+          ? data.lastEngineOilChangeMileage.value
+          : this.lastEngineOilChangeMileage,
+      lastGearOilChangeMileage: data.lastGearOilChangeMileage.present
+          ? data.lastGearOilChangeMileage.value
+          : this.lastGearOilChangeMileage,
+      nextReminderDate: data.nextReminderDate.present
+          ? data.nextReminderDate.value
+          : this.nextReminderDate,
+      nextReminderType: data.nextReminderType.present
+          ? data.nextReminderType.value
+          : this.nextReminderType,
     );
   }
 
@@ -1768,14 +2198,38 @@ class Vehicle extends DataClass implements Insertable<Vehicle> {
           ..write('registrationNumber: $registrationNumber, ')
           ..write('make: $make, ')
           ..write('model: $model, ')
-          ..write('year: $year')
+          ..write('year: $year, ')
+          ..write('currentMileage: $currentMileage, ')
+          ..write('lastGeneralServiceDate: $lastGeneralServiceDate, ')
+          ..write('lastEngineOilChangeDate: $lastEngineOilChangeDate, ')
+          ..write('lastGearOilChangeDate: $lastGearOilChangeDate, ')
+          ..write('lastGeneralServiceMileage: $lastGeneralServiceMileage, ')
+          ..write('lastEngineOilChangeMileage: $lastEngineOilChangeMileage, ')
+          ..write('lastGearOilChangeMileage: $lastGearOilChangeMileage, ')
+          ..write('nextReminderDate: $nextReminderDate, ')
+          ..write('nextReminderType: $nextReminderType')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, customerId, registrationNumber, make, model, year);
+  int get hashCode => Object.hash(
+    id,
+    customerId,
+    registrationNumber,
+    make,
+    model,
+    year,
+    currentMileage,
+    lastGeneralServiceDate,
+    lastEngineOilChangeDate,
+    lastGearOilChangeDate,
+    lastGeneralServiceMileage,
+    lastEngineOilChangeMileage,
+    lastGearOilChangeMileage,
+    nextReminderDate,
+    nextReminderType,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1785,7 +2239,16 @@ class Vehicle extends DataClass implements Insertable<Vehicle> {
           other.registrationNumber == this.registrationNumber &&
           other.make == this.make &&
           other.model == this.model &&
-          other.year == this.year);
+          other.year == this.year &&
+          other.currentMileage == this.currentMileage &&
+          other.lastGeneralServiceDate == this.lastGeneralServiceDate &&
+          other.lastEngineOilChangeDate == this.lastEngineOilChangeDate &&
+          other.lastGearOilChangeDate == this.lastGearOilChangeDate &&
+          other.lastGeneralServiceMileage == this.lastGeneralServiceMileage &&
+          other.lastEngineOilChangeMileage == this.lastEngineOilChangeMileage &&
+          other.lastGearOilChangeMileage == this.lastGearOilChangeMileage &&
+          other.nextReminderDate == this.nextReminderDate &&
+          other.nextReminderType == this.nextReminderType);
 }
 
 class VehiclesCompanion extends UpdateCompanion<Vehicle> {
@@ -1795,6 +2258,15 @@ class VehiclesCompanion extends UpdateCompanion<Vehicle> {
   final Value<String?> make;
   final Value<String?> model;
   final Value<int?> year;
+  final Value<int?> currentMileage;
+  final Value<DateTime?> lastGeneralServiceDate;
+  final Value<DateTime?> lastEngineOilChangeDate;
+  final Value<DateTime?> lastGearOilChangeDate;
+  final Value<int?> lastGeneralServiceMileage;
+  final Value<int?> lastEngineOilChangeMileage;
+  final Value<int?> lastGearOilChangeMileage;
+  final Value<DateTime?> nextReminderDate;
+  final Value<String?> nextReminderType;
   const VehiclesCompanion({
     this.id = const Value.absent(),
     this.customerId = const Value.absent(),
@@ -1802,6 +2274,15 @@ class VehiclesCompanion extends UpdateCompanion<Vehicle> {
     this.make = const Value.absent(),
     this.model = const Value.absent(),
     this.year = const Value.absent(),
+    this.currentMileage = const Value.absent(),
+    this.lastGeneralServiceDate = const Value.absent(),
+    this.lastEngineOilChangeDate = const Value.absent(),
+    this.lastGearOilChangeDate = const Value.absent(),
+    this.lastGeneralServiceMileage = const Value.absent(),
+    this.lastEngineOilChangeMileage = const Value.absent(),
+    this.lastGearOilChangeMileage = const Value.absent(),
+    this.nextReminderDate = const Value.absent(),
+    this.nextReminderType = const Value.absent(),
   });
   VehiclesCompanion.insert({
     this.id = const Value.absent(),
@@ -1810,6 +2291,15 @@ class VehiclesCompanion extends UpdateCompanion<Vehicle> {
     this.make = const Value.absent(),
     this.model = const Value.absent(),
     this.year = const Value.absent(),
+    this.currentMileage = const Value.absent(),
+    this.lastGeneralServiceDate = const Value.absent(),
+    this.lastEngineOilChangeDate = const Value.absent(),
+    this.lastGearOilChangeDate = const Value.absent(),
+    this.lastGeneralServiceMileage = const Value.absent(),
+    this.lastEngineOilChangeMileage = const Value.absent(),
+    this.lastGearOilChangeMileage = const Value.absent(),
+    this.nextReminderDate = const Value.absent(),
+    this.nextReminderType = const Value.absent(),
   }) : customerId = Value(customerId),
        registrationNumber = Value(registrationNumber);
   static Insertable<Vehicle> custom({
@@ -1819,6 +2309,15 @@ class VehiclesCompanion extends UpdateCompanion<Vehicle> {
     Expression<String>? make,
     Expression<String>? model,
     Expression<int>? year,
+    Expression<int>? currentMileage,
+    Expression<DateTime>? lastGeneralServiceDate,
+    Expression<DateTime>? lastEngineOilChangeDate,
+    Expression<DateTime>? lastGearOilChangeDate,
+    Expression<int>? lastGeneralServiceMileage,
+    Expression<int>? lastEngineOilChangeMileage,
+    Expression<int>? lastGearOilChangeMileage,
+    Expression<DateTime>? nextReminderDate,
+    Expression<String>? nextReminderType,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -1827,6 +2326,21 @@ class VehiclesCompanion extends UpdateCompanion<Vehicle> {
       if (make != null) 'make': make,
       if (model != null) 'model': model,
       if (year != null) 'year': year,
+      if (currentMileage != null) 'current_mileage': currentMileage,
+      if (lastGeneralServiceDate != null)
+        'last_general_service_date': lastGeneralServiceDate,
+      if (lastEngineOilChangeDate != null)
+        'last_engine_oil_change_date': lastEngineOilChangeDate,
+      if (lastGearOilChangeDate != null)
+        'last_gear_oil_change_date': lastGearOilChangeDate,
+      if (lastGeneralServiceMileage != null)
+        'last_general_service_mileage': lastGeneralServiceMileage,
+      if (lastEngineOilChangeMileage != null)
+        'last_engine_oil_change_mileage': lastEngineOilChangeMileage,
+      if (lastGearOilChangeMileage != null)
+        'last_gear_oil_change_mileage': lastGearOilChangeMileage,
+      if (nextReminderDate != null) 'next_reminder_date': nextReminderDate,
+      if (nextReminderType != null) 'next_reminder_type': nextReminderType,
     });
   }
 
@@ -1837,6 +2351,15 @@ class VehiclesCompanion extends UpdateCompanion<Vehicle> {
     Value<String?>? make,
     Value<String?>? model,
     Value<int?>? year,
+    Value<int?>? currentMileage,
+    Value<DateTime?>? lastGeneralServiceDate,
+    Value<DateTime?>? lastEngineOilChangeDate,
+    Value<DateTime?>? lastGearOilChangeDate,
+    Value<int?>? lastGeneralServiceMileage,
+    Value<int?>? lastEngineOilChangeMileage,
+    Value<int?>? lastGearOilChangeMileage,
+    Value<DateTime?>? nextReminderDate,
+    Value<String?>? nextReminderType,
   }) {
     return VehiclesCompanion(
       id: id ?? this.id,
@@ -1845,6 +2368,21 @@ class VehiclesCompanion extends UpdateCompanion<Vehicle> {
       make: make ?? this.make,
       model: model ?? this.model,
       year: year ?? this.year,
+      currentMileage: currentMileage ?? this.currentMileage,
+      lastGeneralServiceDate:
+          lastGeneralServiceDate ?? this.lastGeneralServiceDate,
+      lastEngineOilChangeDate:
+          lastEngineOilChangeDate ?? this.lastEngineOilChangeDate,
+      lastGearOilChangeDate:
+          lastGearOilChangeDate ?? this.lastGearOilChangeDate,
+      lastGeneralServiceMileage:
+          lastGeneralServiceMileage ?? this.lastGeneralServiceMileage,
+      lastEngineOilChangeMileage:
+          lastEngineOilChangeMileage ?? this.lastEngineOilChangeMileage,
+      lastGearOilChangeMileage:
+          lastGearOilChangeMileage ?? this.lastGearOilChangeMileage,
+      nextReminderDate: nextReminderDate ?? this.nextReminderDate,
+      nextReminderType: nextReminderType ?? this.nextReminderType,
     );
   }
 
@@ -1869,6 +2407,45 @@ class VehiclesCompanion extends UpdateCompanion<Vehicle> {
     if (year.present) {
       map['year'] = Variable<int>(year.value);
     }
+    if (currentMileage.present) {
+      map['current_mileage'] = Variable<int>(currentMileage.value);
+    }
+    if (lastGeneralServiceDate.present) {
+      map['last_general_service_date'] = Variable<DateTime>(
+        lastGeneralServiceDate.value,
+      );
+    }
+    if (lastEngineOilChangeDate.present) {
+      map['last_engine_oil_change_date'] = Variable<DateTime>(
+        lastEngineOilChangeDate.value,
+      );
+    }
+    if (lastGearOilChangeDate.present) {
+      map['last_gear_oil_change_date'] = Variable<DateTime>(
+        lastGearOilChangeDate.value,
+      );
+    }
+    if (lastGeneralServiceMileage.present) {
+      map['last_general_service_mileage'] = Variable<int>(
+        lastGeneralServiceMileage.value,
+      );
+    }
+    if (lastEngineOilChangeMileage.present) {
+      map['last_engine_oil_change_mileage'] = Variable<int>(
+        lastEngineOilChangeMileage.value,
+      );
+    }
+    if (lastGearOilChangeMileage.present) {
+      map['last_gear_oil_change_mileage'] = Variable<int>(
+        lastGearOilChangeMileage.value,
+      );
+    }
+    if (nextReminderDate.present) {
+      map['next_reminder_date'] = Variable<DateTime>(nextReminderDate.value);
+    }
+    if (nextReminderType.present) {
+      map['next_reminder_type'] = Variable<String>(nextReminderType.value);
+    }
     return map;
   }
 
@@ -1880,7 +2457,16 @@ class VehiclesCompanion extends UpdateCompanion<Vehicle> {
           ..write('registrationNumber: $registrationNumber, ')
           ..write('make: $make, ')
           ..write('model: $model, ')
-          ..write('year: $year')
+          ..write('year: $year, ')
+          ..write('currentMileage: $currentMileage, ')
+          ..write('lastGeneralServiceDate: $lastGeneralServiceDate, ')
+          ..write('lastEngineOilChangeDate: $lastEngineOilChangeDate, ')
+          ..write('lastGearOilChangeDate: $lastGearOilChangeDate, ')
+          ..write('lastGeneralServiceMileage: $lastGeneralServiceMileage, ')
+          ..write('lastEngineOilChangeMileage: $lastEngineOilChangeMileage, ')
+          ..write('lastGearOilChangeMileage: $lastGearOilChangeMileage, ')
+          ..write('nextReminderDate: $nextReminderDate, ')
+          ..write('nextReminderType: $nextReminderType')
           ..write(')'))
         .toString();
   }
@@ -3282,6 +3868,372 @@ class VehicleModelsCompanion extends UpdateCompanion<VehicleModel> {
   }
 }
 
+class $ServiceHistoriesTable extends ServiceHistories
+    with TableInfo<$ServiceHistoriesTable, ServiceHistory> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ServiceHistoriesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _vehicleIdMeta = const VerificationMeta(
+    'vehicleId',
+  );
+  @override
+  late final GeneratedColumn<int> vehicleId = GeneratedColumn<int>(
+    'vehicle_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES vehicles (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _serviceTypeMeta = const VerificationMeta(
+    'serviceType',
+  );
+  @override
+  late final GeneratedColumn<String> serviceType = GeneratedColumn<String>(
+    'service_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _serviceDateMeta = const VerificationMeta(
+    'serviceDate',
+  );
+  @override
+  late final GeneratedColumn<DateTime> serviceDate = GeneratedColumn<DateTime>(
+    'service_date',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _mileageMeta = const VerificationMeta(
+    'mileage',
+  );
+  @override
+  late final GeneratedColumn<int> mileage = GeneratedColumn<int>(
+    'mileage',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    vehicleId,
+    serviceType,
+    serviceDate,
+    mileage,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'service_histories';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ServiceHistory> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('vehicle_id')) {
+      context.handle(
+        _vehicleIdMeta,
+        vehicleId.isAcceptableOrUnknown(data['vehicle_id']!, _vehicleIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_vehicleIdMeta);
+    }
+    if (data.containsKey('service_type')) {
+      context.handle(
+        _serviceTypeMeta,
+        serviceType.isAcceptableOrUnknown(
+          data['service_type']!,
+          _serviceTypeMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_serviceTypeMeta);
+    }
+    if (data.containsKey('service_date')) {
+      context.handle(
+        _serviceDateMeta,
+        serviceDate.isAcceptableOrUnknown(
+          data['service_date']!,
+          _serviceDateMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_serviceDateMeta);
+    }
+    if (data.containsKey('mileage')) {
+      context.handle(
+        _mileageMeta,
+        mileage.isAcceptableOrUnknown(data['mileage']!, _mileageMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_mileageMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ServiceHistory map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ServiceHistory(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      vehicleId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}vehicle_id'],
+      )!,
+      serviceType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}service_type'],
+      )!,
+      serviceDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}service_date'],
+      )!,
+      mileage: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}mileage'],
+      )!,
+    );
+  }
+
+  @override
+  $ServiceHistoriesTable createAlias(String alias) {
+    return $ServiceHistoriesTable(attachedDatabase, alias);
+  }
+}
+
+class ServiceHistory extends DataClass implements Insertable<ServiceHistory> {
+  final int id;
+  final int vehicleId;
+  final String serviceType;
+  final DateTime serviceDate;
+  final int mileage;
+  const ServiceHistory({
+    required this.id,
+    required this.vehicleId,
+    required this.serviceType,
+    required this.serviceDate,
+    required this.mileage,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['vehicle_id'] = Variable<int>(vehicleId);
+    map['service_type'] = Variable<String>(serviceType);
+    map['service_date'] = Variable<DateTime>(serviceDate);
+    map['mileage'] = Variable<int>(mileage);
+    return map;
+  }
+
+  ServiceHistoriesCompanion toCompanion(bool nullToAbsent) {
+    return ServiceHistoriesCompanion(
+      id: Value(id),
+      vehicleId: Value(vehicleId),
+      serviceType: Value(serviceType),
+      serviceDate: Value(serviceDate),
+      mileage: Value(mileage),
+    );
+  }
+
+  factory ServiceHistory.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ServiceHistory(
+      id: serializer.fromJson<int>(json['id']),
+      vehicleId: serializer.fromJson<int>(json['vehicleId']),
+      serviceType: serializer.fromJson<String>(json['serviceType']),
+      serviceDate: serializer.fromJson<DateTime>(json['serviceDate']),
+      mileage: serializer.fromJson<int>(json['mileage']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'vehicleId': serializer.toJson<int>(vehicleId),
+      'serviceType': serializer.toJson<String>(serviceType),
+      'serviceDate': serializer.toJson<DateTime>(serviceDate),
+      'mileage': serializer.toJson<int>(mileage),
+    };
+  }
+
+  ServiceHistory copyWith({
+    int? id,
+    int? vehicleId,
+    String? serviceType,
+    DateTime? serviceDate,
+    int? mileage,
+  }) => ServiceHistory(
+    id: id ?? this.id,
+    vehicleId: vehicleId ?? this.vehicleId,
+    serviceType: serviceType ?? this.serviceType,
+    serviceDate: serviceDate ?? this.serviceDate,
+    mileage: mileage ?? this.mileage,
+  );
+  ServiceHistory copyWithCompanion(ServiceHistoriesCompanion data) {
+    return ServiceHistory(
+      id: data.id.present ? data.id.value : this.id,
+      vehicleId: data.vehicleId.present ? data.vehicleId.value : this.vehicleId,
+      serviceType: data.serviceType.present
+          ? data.serviceType.value
+          : this.serviceType,
+      serviceDate: data.serviceDate.present
+          ? data.serviceDate.value
+          : this.serviceDate,
+      mileage: data.mileage.present ? data.mileage.value : this.mileage,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ServiceHistory(')
+          ..write('id: $id, ')
+          ..write('vehicleId: $vehicleId, ')
+          ..write('serviceType: $serviceType, ')
+          ..write('serviceDate: $serviceDate, ')
+          ..write('mileage: $mileage')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, vehicleId, serviceType, serviceDate, mileage);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ServiceHistory &&
+          other.id == this.id &&
+          other.vehicleId == this.vehicleId &&
+          other.serviceType == this.serviceType &&
+          other.serviceDate == this.serviceDate &&
+          other.mileage == this.mileage);
+}
+
+class ServiceHistoriesCompanion extends UpdateCompanion<ServiceHistory> {
+  final Value<int> id;
+  final Value<int> vehicleId;
+  final Value<String> serviceType;
+  final Value<DateTime> serviceDate;
+  final Value<int> mileage;
+  const ServiceHistoriesCompanion({
+    this.id = const Value.absent(),
+    this.vehicleId = const Value.absent(),
+    this.serviceType = const Value.absent(),
+    this.serviceDate = const Value.absent(),
+    this.mileage = const Value.absent(),
+  });
+  ServiceHistoriesCompanion.insert({
+    this.id = const Value.absent(),
+    required int vehicleId,
+    required String serviceType,
+    required DateTime serviceDate,
+    required int mileage,
+  }) : vehicleId = Value(vehicleId),
+       serviceType = Value(serviceType),
+       serviceDate = Value(serviceDate),
+       mileage = Value(mileage);
+  static Insertable<ServiceHistory> custom({
+    Expression<int>? id,
+    Expression<int>? vehicleId,
+    Expression<String>? serviceType,
+    Expression<DateTime>? serviceDate,
+    Expression<int>? mileage,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (vehicleId != null) 'vehicle_id': vehicleId,
+      if (serviceType != null) 'service_type': serviceType,
+      if (serviceDate != null) 'service_date': serviceDate,
+      if (mileage != null) 'mileage': mileage,
+    });
+  }
+
+  ServiceHistoriesCompanion copyWith({
+    Value<int>? id,
+    Value<int>? vehicleId,
+    Value<String>? serviceType,
+    Value<DateTime>? serviceDate,
+    Value<int>? mileage,
+  }) {
+    return ServiceHistoriesCompanion(
+      id: id ?? this.id,
+      vehicleId: vehicleId ?? this.vehicleId,
+      serviceType: serviceType ?? this.serviceType,
+      serviceDate: serviceDate ?? this.serviceDate,
+      mileage: mileage ?? this.mileage,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (vehicleId.present) {
+      map['vehicle_id'] = Variable<int>(vehicleId.value);
+    }
+    if (serviceType.present) {
+      map['service_type'] = Variable<String>(serviceType.value);
+    }
+    if (serviceDate.present) {
+      map['service_date'] = Variable<DateTime>(serviceDate.value);
+    }
+    if (mileage.present) {
+      map['mileage'] = Variable<int>(mileage.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ServiceHistoriesCompanion(')
+          ..write('id: $id, ')
+          ..write('vehicleId: $vehicleId, ')
+          ..write('serviceType: $serviceType, ')
+          ..write('serviceDate: $serviceDate, ')
+          ..write('mileage: $mileage')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -3293,6 +4245,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $OrderItemsTable orderItems = $OrderItemsTable(this);
   late final $ServicesTable services = $ServicesTable(this);
   late final $VehicleModelsTable vehicleModels = $VehicleModelsTable(this);
+  late final $ServiceHistoriesTable serviceHistories = $ServiceHistoriesTable(
+    this,
+  );
+  late final VehicleDao vehicleDao = VehicleDao(this as AppDatabase);
+  late final ServiceHistoryDao serviceHistoryDao = ServiceHistoryDao(
+    this as AppDatabase,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -3306,6 +4265,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     orderItems,
     services,
     vehicleModels,
+    serviceHistories,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -3322,6 +4282,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('order_items', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'vehicles',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('service_histories', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -4352,6 +5319,15 @@ typedef $$VehiclesTableCreateCompanionBuilder =
       Value<String?> make,
       Value<String?> model,
       Value<int?> year,
+      Value<int?> currentMileage,
+      Value<DateTime?> lastGeneralServiceDate,
+      Value<DateTime?> lastEngineOilChangeDate,
+      Value<DateTime?> lastGearOilChangeDate,
+      Value<int?> lastGeneralServiceMileage,
+      Value<int?> lastEngineOilChangeMileage,
+      Value<int?> lastGearOilChangeMileage,
+      Value<DateTime?> nextReminderDate,
+      Value<String?> nextReminderType,
     });
 typedef $$VehiclesTableUpdateCompanionBuilder =
     VehiclesCompanion Function({
@@ -4361,6 +5337,15 @@ typedef $$VehiclesTableUpdateCompanionBuilder =
       Value<String?> make,
       Value<String?> model,
       Value<int?> year,
+      Value<int?> currentMileage,
+      Value<DateTime?> lastGeneralServiceDate,
+      Value<DateTime?> lastEngineOilChangeDate,
+      Value<DateTime?> lastGearOilChangeDate,
+      Value<int?> lastGeneralServiceMileage,
+      Value<int?> lastEngineOilChangeMileage,
+      Value<int?> lastGearOilChangeMileage,
+      Value<DateTime?> nextReminderDate,
+      Value<String?> nextReminderType,
     });
 
 final class $$VehiclesTableReferences
@@ -4383,6 +5368,29 @@ final class $$VehiclesTableReferences
     if (item == null) return manager;
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static MultiTypedResultKey<$ServiceHistoriesTable, List<ServiceHistory>>
+  _serviceHistoriesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.serviceHistories,
+    aliasName: $_aliasNameGenerator(
+      db.vehicles.id,
+      db.serviceHistories.vehicleId,
+    ),
+  );
+
+  $$ServiceHistoriesTableProcessedTableManager get serviceHistoriesRefs {
+    final manager = $$ServiceHistoriesTableTableManager(
+      $_db,
+      $_db.serviceHistories,
+    ).filter((f) => f.vehicleId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _serviceHistoriesRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
     );
   }
 }
@@ -4421,6 +5429,51 @@ class $$VehiclesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<int> get currentMileage => $composableBuilder(
+    column: $table.currentMileage,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastGeneralServiceDate => $composableBuilder(
+    column: $table.lastGeneralServiceDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastEngineOilChangeDate => $composableBuilder(
+    column: $table.lastEngineOilChangeDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastGearOilChangeDate => $composableBuilder(
+    column: $table.lastGearOilChangeDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get lastGeneralServiceMileage => $composableBuilder(
+    column: $table.lastGeneralServiceMileage,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get lastEngineOilChangeMileage => $composableBuilder(
+    column: $table.lastEngineOilChangeMileage,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get lastGearOilChangeMileage => $composableBuilder(
+    column: $table.lastGearOilChangeMileage,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get nextReminderDate => $composableBuilder(
+    column: $table.nextReminderDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get nextReminderType => $composableBuilder(
+    column: $table.nextReminderType,
+    builder: (column) => ColumnFilters(column),
+  );
+
   $$CustomersTableFilterComposer get customerId {
     final $$CustomersTableFilterComposer composer = $composerBuilder(
       composer: this,
@@ -4442,6 +5495,31 @@ class $$VehiclesTableFilterComposer
           ),
     );
     return composer;
+  }
+
+  Expression<bool> serviceHistoriesRefs(
+    Expression<bool> Function($$ServiceHistoriesTableFilterComposer f) f,
+  ) {
+    final $$ServiceHistoriesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.serviceHistories,
+      getReferencedColumn: (t) => t.vehicleId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ServiceHistoriesTableFilterComposer(
+            $db: $db,
+            $table: $db.serviceHistories,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
   }
 }
 
@@ -4476,6 +5554,51 @@ class $$VehiclesTableOrderingComposer
 
   ColumnOrderings<int> get year => $composableBuilder(
     column: $table.year,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get currentMileage => $composableBuilder(
+    column: $table.currentMileage,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get lastGeneralServiceDate => $composableBuilder(
+    column: $table.lastGeneralServiceDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get lastEngineOilChangeDate => $composableBuilder(
+    column: $table.lastEngineOilChangeDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get lastGearOilChangeDate => $composableBuilder(
+    column: $table.lastGearOilChangeDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get lastGeneralServiceMileage => $composableBuilder(
+    column: $table.lastGeneralServiceMileage,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get lastEngineOilChangeMileage => $composableBuilder(
+    column: $table.lastEngineOilChangeMileage,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get lastGearOilChangeMileage => $composableBuilder(
+    column: $table.lastGearOilChangeMileage,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get nextReminderDate => $composableBuilder(
+    column: $table.nextReminderDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get nextReminderType => $composableBuilder(
+    column: $table.nextReminderType,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -4529,6 +5652,51 @@ class $$VehiclesTableAnnotationComposer
   GeneratedColumn<int> get year =>
       $composableBuilder(column: $table.year, builder: (column) => column);
 
+  GeneratedColumn<int> get currentMileage => $composableBuilder(
+    column: $table.currentMileage,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get lastGeneralServiceDate => $composableBuilder(
+    column: $table.lastGeneralServiceDate,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get lastEngineOilChangeDate => $composableBuilder(
+    column: $table.lastEngineOilChangeDate,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get lastGearOilChangeDate => $composableBuilder(
+    column: $table.lastGearOilChangeDate,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get lastGeneralServiceMileage => $composableBuilder(
+    column: $table.lastGeneralServiceMileage,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get lastEngineOilChangeMileage => $composableBuilder(
+    column: $table.lastEngineOilChangeMileage,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get lastGearOilChangeMileage => $composableBuilder(
+    column: $table.lastGearOilChangeMileage,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get nextReminderDate => $composableBuilder(
+    column: $table.nextReminderDate,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get nextReminderType => $composableBuilder(
+    column: $table.nextReminderType,
+    builder: (column) => column,
+  );
+
   $$CustomersTableAnnotationComposer get customerId {
     final $$CustomersTableAnnotationComposer composer = $composerBuilder(
       composer: this,
@@ -4551,6 +5719,31 @@ class $$VehiclesTableAnnotationComposer
     );
     return composer;
   }
+
+  Expression<T> serviceHistoriesRefs<T extends Object>(
+    Expression<T> Function($$ServiceHistoriesTableAnnotationComposer a) f,
+  ) {
+    final $$ServiceHistoriesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.serviceHistories,
+      getReferencedColumn: (t) => t.vehicleId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ServiceHistoriesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.serviceHistories,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$VehiclesTableTableManager
@@ -4566,7 +5759,7 @@ class $$VehiclesTableTableManager
           $$VehiclesTableUpdateCompanionBuilder,
           (Vehicle, $$VehiclesTableReferences),
           Vehicle,
-          PrefetchHooks Function({bool customerId})
+          PrefetchHooks Function({bool customerId, bool serviceHistoriesRefs})
         > {
   $$VehiclesTableTableManager(_$AppDatabase db, $VehiclesTable table)
     : super(
@@ -4587,6 +5780,15 @@ class $$VehiclesTableTableManager
                 Value<String?> make = const Value.absent(),
                 Value<String?> model = const Value.absent(),
                 Value<int?> year = const Value.absent(),
+                Value<int?> currentMileage = const Value.absent(),
+                Value<DateTime?> lastGeneralServiceDate = const Value.absent(),
+                Value<DateTime?> lastEngineOilChangeDate = const Value.absent(),
+                Value<DateTime?> lastGearOilChangeDate = const Value.absent(),
+                Value<int?> lastGeneralServiceMileage = const Value.absent(),
+                Value<int?> lastEngineOilChangeMileage = const Value.absent(),
+                Value<int?> lastGearOilChangeMileage = const Value.absent(),
+                Value<DateTime?> nextReminderDate = const Value.absent(),
+                Value<String?> nextReminderType = const Value.absent(),
               }) => VehiclesCompanion(
                 id: id,
                 customerId: customerId,
@@ -4594,6 +5796,15 @@ class $$VehiclesTableTableManager
                 make: make,
                 model: model,
                 year: year,
+                currentMileage: currentMileage,
+                lastGeneralServiceDate: lastGeneralServiceDate,
+                lastEngineOilChangeDate: lastEngineOilChangeDate,
+                lastGearOilChangeDate: lastGearOilChangeDate,
+                lastGeneralServiceMileage: lastGeneralServiceMileage,
+                lastEngineOilChangeMileage: lastEngineOilChangeMileage,
+                lastGearOilChangeMileage: lastGearOilChangeMileage,
+                nextReminderDate: nextReminderDate,
+                nextReminderType: nextReminderType,
               ),
           createCompanionCallback:
               ({
@@ -4603,6 +5814,15 @@ class $$VehiclesTableTableManager
                 Value<String?> make = const Value.absent(),
                 Value<String?> model = const Value.absent(),
                 Value<int?> year = const Value.absent(),
+                Value<int?> currentMileage = const Value.absent(),
+                Value<DateTime?> lastGeneralServiceDate = const Value.absent(),
+                Value<DateTime?> lastEngineOilChangeDate = const Value.absent(),
+                Value<DateTime?> lastGearOilChangeDate = const Value.absent(),
+                Value<int?> lastGeneralServiceMileage = const Value.absent(),
+                Value<int?> lastEngineOilChangeMileage = const Value.absent(),
+                Value<int?> lastGearOilChangeMileage = const Value.absent(),
+                Value<DateTime?> nextReminderDate = const Value.absent(),
+                Value<String?> nextReminderType = const Value.absent(),
               }) => VehiclesCompanion.insert(
                 id: id,
                 customerId: customerId,
@@ -4610,6 +5830,15 @@ class $$VehiclesTableTableManager
                 make: make,
                 model: model,
                 year: year,
+                currentMileage: currentMileage,
+                lastGeneralServiceDate: lastGeneralServiceDate,
+                lastEngineOilChangeDate: lastEngineOilChangeDate,
+                lastGearOilChangeDate: lastGearOilChangeDate,
+                lastGeneralServiceMileage: lastGeneralServiceMileage,
+                lastEngineOilChangeMileage: lastEngineOilChangeMileage,
+                lastGearOilChangeMileage: lastGearOilChangeMileage,
+                nextReminderDate: nextReminderDate,
+                nextReminderType: nextReminderType,
               ),
           withReferenceMapper: (p0) => p0
               .map(
@@ -4619,47 +5848,72 @@ class $$VehiclesTableTableManager
                 ),
               )
               .toList(),
-          prefetchHooksCallback: ({customerId = false}) {
-            return PrefetchHooks(
-              db: db,
-              explicitlyWatchedTables: [],
-              addJoins:
-                  <
-                    T extends TableManagerState<
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic,
-                      dynamic
-                    >
-                  >(state) {
-                    if (customerId) {
-                      state =
-                          state.withJoin(
-                                currentTable: table,
-                                currentColumn: table.customerId,
-                                referencedTable: $$VehiclesTableReferences
-                                    ._customerIdTable(db),
-                                referencedColumn: $$VehiclesTableReferences
-                                    ._customerIdTable(db)
-                                    .id,
-                              )
-                              as T;
-                    }
+          prefetchHooksCallback:
+              ({customerId = false, serviceHistoriesRefs = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (serviceHistoriesRefs) db.serviceHistories,
+                  ],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (customerId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.customerId,
+                                    referencedTable: $$VehiclesTableReferences
+                                        ._customerIdTable(db),
+                                    referencedColumn: $$VehiclesTableReferences
+                                        ._customerIdTable(db)
+                                        .id,
+                                  )
+                                  as T;
+                        }
 
-                    return state;
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (serviceHistoriesRefs)
+                        await $_getPrefetchedData<
+                          Vehicle,
+                          $VehiclesTable,
+                          ServiceHistory
+                        >(
+                          currentTable: table,
+                          referencedTable: $$VehiclesTableReferences
+                              ._serviceHistoriesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$VehiclesTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).serviceHistoriesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.vehicleId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
                   },
-              getPrefetchedDataCallback: (items) async {
-                return [];
+                );
               },
-            );
-          },
         ),
       );
 }
@@ -4676,7 +5930,7 @@ typedef $$VehiclesTableProcessedTableManager =
       $$VehiclesTableUpdateCompanionBuilder,
       (Vehicle, $$VehiclesTableReferences),
       Vehicle,
-      PrefetchHooks Function({bool customerId})
+      PrefetchHooks Function({bool customerId, bool serviceHistoriesRefs})
     >;
 typedef $$OrdersTableCreateCompanionBuilder =
     OrdersCompanion Function({
@@ -5853,6 +7107,332 @@ typedef $$VehicleModelsTableProcessedTableManager =
       VehicleModel,
       PrefetchHooks Function()
     >;
+typedef $$ServiceHistoriesTableCreateCompanionBuilder =
+    ServiceHistoriesCompanion Function({
+      Value<int> id,
+      required int vehicleId,
+      required String serviceType,
+      required DateTime serviceDate,
+      required int mileage,
+    });
+typedef $$ServiceHistoriesTableUpdateCompanionBuilder =
+    ServiceHistoriesCompanion Function({
+      Value<int> id,
+      Value<int> vehicleId,
+      Value<String> serviceType,
+      Value<DateTime> serviceDate,
+      Value<int> mileage,
+    });
+
+final class $$ServiceHistoriesTableReferences
+    extends
+        BaseReferences<_$AppDatabase, $ServiceHistoriesTable, ServiceHistory> {
+  $$ServiceHistoriesTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $VehiclesTable _vehicleIdTable(_$AppDatabase db) =>
+      db.vehicles.createAlias(
+        $_aliasNameGenerator(db.serviceHistories.vehicleId, db.vehicles.id),
+      );
+
+  $$VehiclesTableProcessedTableManager get vehicleId {
+    final $_column = $_itemColumn<int>('vehicle_id')!;
+
+    final manager = $$VehiclesTableTableManager(
+      $_db,
+      $_db.vehicles,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_vehicleIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$ServiceHistoriesTableFilterComposer
+    extends Composer<_$AppDatabase, $ServiceHistoriesTable> {
+  $$ServiceHistoriesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get serviceType => $composableBuilder(
+    column: $table.serviceType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get serviceDate => $composableBuilder(
+    column: $table.serviceDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get mileage => $composableBuilder(
+    column: $table.mileage,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$VehiclesTableFilterComposer get vehicleId {
+    final $$VehiclesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.vehicleId,
+      referencedTable: $db.vehicles,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$VehiclesTableFilterComposer(
+            $db: $db,
+            $table: $db.vehicles,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ServiceHistoriesTableOrderingComposer
+    extends Composer<_$AppDatabase, $ServiceHistoriesTable> {
+  $$ServiceHistoriesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get serviceType => $composableBuilder(
+    column: $table.serviceType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get serviceDate => $composableBuilder(
+    column: $table.serviceDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get mileage => $composableBuilder(
+    column: $table.mileage,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$VehiclesTableOrderingComposer get vehicleId {
+    final $$VehiclesTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.vehicleId,
+      referencedTable: $db.vehicles,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$VehiclesTableOrderingComposer(
+            $db: $db,
+            $table: $db.vehicles,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ServiceHistoriesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ServiceHistoriesTable> {
+  $$ServiceHistoriesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get serviceType => $composableBuilder(
+    column: $table.serviceType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get serviceDate => $composableBuilder(
+    column: $table.serviceDate,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get mileage =>
+      $composableBuilder(column: $table.mileage, builder: (column) => column);
+
+  $$VehiclesTableAnnotationComposer get vehicleId {
+    final $$VehiclesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.vehicleId,
+      referencedTable: $db.vehicles,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$VehiclesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.vehicles,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$ServiceHistoriesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $ServiceHistoriesTable,
+          ServiceHistory,
+          $$ServiceHistoriesTableFilterComposer,
+          $$ServiceHistoriesTableOrderingComposer,
+          $$ServiceHistoriesTableAnnotationComposer,
+          $$ServiceHistoriesTableCreateCompanionBuilder,
+          $$ServiceHistoriesTableUpdateCompanionBuilder,
+          (ServiceHistory, $$ServiceHistoriesTableReferences),
+          ServiceHistory,
+          PrefetchHooks Function({bool vehicleId})
+        > {
+  $$ServiceHistoriesTableTableManager(
+    _$AppDatabase db,
+    $ServiceHistoriesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ServiceHistoriesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ServiceHistoriesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ServiceHistoriesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> vehicleId = const Value.absent(),
+                Value<String> serviceType = const Value.absent(),
+                Value<DateTime> serviceDate = const Value.absent(),
+                Value<int> mileage = const Value.absent(),
+              }) => ServiceHistoriesCompanion(
+                id: id,
+                vehicleId: vehicleId,
+                serviceType: serviceType,
+                serviceDate: serviceDate,
+                mileage: mileage,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int vehicleId,
+                required String serviceType,
+                required DateTime serviceDate,
+                required int mileage,
+              }) => ServiceHistoriesCompanion.insert(
+                id: id,
+                vehicleId: vehicleId,
+                serviceType: serviceType,
+                serviceDate: serviceDate,
+                mileage: mileage,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$ServiceHistoriesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({vehicleId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (vehicleId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.vehicleId,
+                                referencedTable:
+                                    $$ServiceHistoriesTableReferences
+                                        ._vehicleIdTable(db),
+                                referencedColumn:
+                                    $$ServiceHistoriesTableReferences
+                                        ._vehicleIdTable(db)
+                                        .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$ServiceHistoriesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ServiceHistoriesTable,
+      ServiceHistory,
+      $$ServiceHistoriesTableFilterComposer,
+      $$ServiceHistoriesTableOrderingComposer,
+      $$ServiceHistoriesTableAnnotationComposer,
+      $$ServiceHistoriesTableCreateCompanionBuilder,
+      $$ServiceHistoriesTableUpdateCompanionBuilder,
+      (ServiceHistory, $$ServiceHistoriesTableReferences),
+      ServiceHistory,
+      PrefetchHooks Function({bool vehicleId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -5873,4 +7453,6 @@ class $AppDatabaseManager {
       $$ServicesTableTableManager(_db, _db.services);
   $$VehicleModelsTableTableManager get vehicleModels =>
       $$VehicleModelsTableTableManager(_db, _db.vehicleModels);
+  $$ServiceHistoriesTableTableManager get serviceHistories =>
+      $$ServiceHistoriesTableTableManager(_db, _db.serviceHistories);
 }

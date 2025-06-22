@@ -1,135 +1,78 @@
 // lib/data/repositories/preference_repository.dart
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'dart:convert'; // Added for json.decode
+import 'package:shared_preferences/shared_preferences.dart';
 
-// Data class to hold user preferences
+// Keys for storing values in shared_preferences
+const String _kCurrency = 'defaultCurrency';
+const String _kEngineKm = 'engineOilIntervalKm';
+const String _kEngineMonths = 'engineOilIntervalMonths';
+const String _kGearKm = 'gearOilIntervalKm';
+const String _kGearMonths = 'gearOilIntervalMonths';
+const String _kGeneralKm = 'generalServiceIntervalKm';
+const String _kGeneralMonths = 'generalServiceIntervalMonths';
+
+// Data class to hold all user preferences
 class UserPreferences {
   final String defaultCurrency;
+  final int engineOilIntervalKm;
+  final int engineOilIntervalMonths;
+  final int gearOilIntervalKm;
+  final int gearOilIntervalMonths;
+  final int generalServiceIntervalKm;
+  final int generalServiceIntervalMonths;
 
-  UserPreferences({this.defaultCurrency = 'PKR'}); // Default to PKR
-
-  UserPreferences.fromJson(Map<String, dynamic> json)
-    : defaultCurrency = json['defaultCurrency'] as String? ?? 'PKR';
-
-  Map<String, dynamic> toJson() => {'defaultCurrency': defaultCurrency};
+  UserPreferences({
+    this.defaultCurrency = 'PKR',
+    this.engineOilIntervalKm = 5000,
+    this.engineOilIntervalMonths = 6,
+    this.gearOilIntervalKm = 40000,
+    this.gearOilIntervalMonths = 24,
+    this.generalServiceIntervalKm = 10000,
+    this.generalServiceIntervalMonths = 12,
+  });
 }
 
-// Provider for PreferenceRepository
+// Provider for the repository
 final preferenceRepositoryProvider = Provider<PreferenceRepository>((ref) {
   return PreferenceRepository();
 });
 
+// This repository now uses SharedPreferences for local, persistent storage.
 class PreferenceRepository {
-  late final FirebaseFirestore _firestore;
-  late final FirebaseAuth _auth;
-  late final String _appId;
-
-  PreferenceRepository() {
-    try {
-      // Access global variables provided by the Canvas environment.
-      // These are injected as Dart string constants via fromEnvironment.
-      _appId = const String.fromEnvironment('APP_ID', defaultValue: 'default-app-id');
-
-      // The __firebase_config is expected to be a JSON string.
-      final String firebaseConfigString = const String.fromEnvironment('FIREBASE_CONFIG', defaultValue: '{}');
-      final Map<String, dynamic> firebaseConfig = firebaseConfigString.isEmpty
-          ? {}
-          : Map<String, dynamic>.from(
-                json.decode(firebaseConfigString) as Map<dynamic, dynamic>, // Use json.decode
-              );
-
-      // Initialize Firebase only if it's not already initialized
-      if (Firebase.apps.isEmpty) {
-        Firebase.initializeApp(
-          options: FirebaseOptions(
-            apiKey: firebaseConfig['apiKey'] as String? ?? '',
-            appId: firebaseConfig['appId'] as String? ?? '',
-            messagingSenderId: firebaseConfig['messagingSenderId'] as String? ?? '',
-            projectId: firebaseConfig['projectId'] as String? ?? '',
-            authDomain: firebaseConfig['authDomain'] as String?,
-            databaseURL: firebaseConfig['databaseURL'] as String?,
-            storageBucket: firebaseConfig['storageBucket'] as String?,
-            measurementId: firebaseConfig['measurementId'] as String?,
-          ),
-        );
-      }
-    } catch (e) {
-      print('Error initializing Firebase or retrieving global vars: $e');
-      _appId = 'default-app-id'; // Fallback in case of any parsing/access error
-    }
-
-    _firestore = FirebaseFirestore.instance;
-    _auth = FirebaseAuth.instance;
-
-    _signInAnonymouslyIfNeeded(); // Ensure auth state
+  // Method to get all preferences, providing defaults if they don't exist.
+  Future<UserPreferences> getPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    return UserPreferences(
+      defaultCurrency: prefs.getString(_kCurrency) ?? 'PKR',
+      engineOilIntervalKm: prefs.getInt(_kEngineKm) ?? 5000,
+      engineOilIntervalMonths: prefs.getInt(_kEngineMonths) ?? 6,
+      gearOilIntervalKm: prefs.getInt(_kGearKm) ?? 40000,
+      gearOilIntervalMonths: prefs.getInt(_kGearMonths) ?? 24,
+      generalServiceIntervalKm: prefs.getInt(_kGeneralKm) ?? 10000,
+      generalServiceIntervalMonths: prefs.getInt(_kGeneralMonths) ?? 12,
+    );
   }
 
-  Future<void> _signInAnonymouslyIfNeeded() async {
-    if (_auth.currentUser == null) {
-      try {
-        final String initialAuthToken = const String.fromEnvironment('INITIAL_AUTH_TOKEN', defaultValue: '');
-
-        if (initialAuthToken.isNotEmpty) {
-          await _auth.signInWithCustomToken(initialAuthToken);
-        } else {
-          await _auth.signInAnonymously();
-        }
-        print('Firebase authenticated as: ${_auth.currentUser?.uid}');
-      } catch (e) {
-        print('Error during Firebase anonymous sign-in: $e');
-      }
-    }
+  // Method to save all preferences.
+  Future<void> savePreferences(UserPreferences preferences) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_kCurrency, preferences.defaultCurrency);
+    await prefs.setInt(_kEngineKm, preferences.engineOilIntervalKm);
+    await prefs.setInt(_kEngineMonths, preferences.engineOilIntervalMonths);
+    await prefs.setInt(_kGearKm, preferences.gearOilIntervalKm);
+    await prefs.setInt(_kGearMonths, preferences.gearOilIntervalMonths);
+    await prefs.setInt(_kGeneralKm, preferences.generalServiceIntervalKm);
+    await prefs.setInt(_kGeneralMonths, preferences.generalServiceIntervalMonths);
   }
 
-  // Helper to get the user-specific document reference
-  DocumentReference _getUserPreferencesDocRef() {
-    final userId = _auth.currentUser?.uid ?? 'anonymous_user';
-    return _firestore
-        .collection('artifacts')
-        .doc(_appId)
-        .collection('users')
-        .doc(userId)
-        .collection('preferences')
-        .doc('userPreferences');
+  // --- Methods for compatibility with your existing CurrencyProvider ---
+  Future<String> getCurrency() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_kCurrency) ?? 'PKR';
   }
 
-  /// Fetches user preferences as a stream for real-time updates.
-  Stream<UserPreferences> getUserPreferencesStream() {
-    _signInAnonymouslyIfNeeded();
-
-    return _getUserPreferencesDocRef()
-        .snapshots()
-        .map((snapshot) {
-          if (snapshot.exists && snapshot.data() != null) {
-            // Cast snapshot.data() to Map<String, dynamic> for fromJson constructor
-            return UserPreferences.fromJson(
-              snapshot.data()! as Map<String, dynamic>,
-            );
-          }
-          return UserPreferences();
-        })
-        .handleError((e) {
-          print('Error fetching user preferences: $e');
-          return UserPreferences();
-        });
-  }
-
-  /// Updates the default currency for the user.
-  Future<bool> updateDefaultCurrency(String currencySymbol) async {
-    try {
-      await _signInAnonymouslyIfNeeded();
-      await _getUserPreferencesDocRef().set({
-        'defaultCurrency': currencySymbol,
-      }, SetOptions(merge: true));
-      print('Default currency updated to: $currencySymbol');
-      return true;
-    } catch (e) {
-      print('Error updating default currency: $e');
-      return false;
-    }
+  Future<void> saveCurrency(String currencyCode) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_kCurrency, currencyCode);
   }
 }
-

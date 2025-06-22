@@ -49,9 +49,10 @@ class CustomerNotifier extends StateNotifier<AsyncValue<List<CustomerWithVehicle
     }
   }
 
-  Future<bool> updateCustomer(Customer customer, List<Vehicle> updatedVehicles) async {
+  Future<bool> updateCustomer(Customer customer) async {
     try {
-      final success = await _repository.updateCustomer(customer, updatedVehicles);
+      // The repository method will also need this simplification.
+      final success = await _repository.updateCustomer(customer);
       if (success) {
         await _fetchCustomers(); // Refresh the list
       }

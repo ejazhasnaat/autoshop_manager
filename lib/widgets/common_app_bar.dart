@@ -9,14 +9,14 @@ class CommonAppBar extends ConsumerWidget implements PreferredSizeWidget {
   final String? title;
   final bool showBackButton;
   final List<Widget>? customActions;
-  final PreferredSizeWidget? bottom; // <--- NEW: Added bottom property
+  final PreferredSizeWidget? bottom;
 
   const CommonAppBar({
     super.key,
     this.title,
     this.showBackButton = false,
     this.customActions,
-    this.bottom, // Initialize bottom
+    this.bottom,
   });
 
   @override
@@ -24,9 +24,7 @@ class CommonAppBar extends ConsumerWidget implements PreferredSizeWidget {
     final authState = ref.watch(authNotifierProvider);
     final currentUserName = authState.user?.username ?? 'Guest';
 
-    // Default actions (username and settings)
     final List<Widget> defaultActions = [
-      // Display active user name
       Center(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8.0),
@@ -39,9 +37,9 @@ class CommonAppBar extends ConsumerWidget implements PreferredSizeWidget {
           ),
         ),
       ),
-      // Hamburger settings icon (using PopupMenuButton for now)
       PopupMenuButton<String>(
         icon: const Icon(Icons.settings),
+        tooltip: 'Settings Menu',
         onSelected: (String result) async {
           if (result == 'logout') {
             await ref.read(authNotifierProvider.notifier).logout();
@@ -55,13 +53,34 @@ class CommonAppBar extends ConsumerWidget implements PreferredSizeWidget {
             );
           } else if (result == 'settings') {
             context.go('/settings');
+          } else if (result == 'manage_users') {
+            context.go('/signup');
           }
         },
-        itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-          const PopupMenuItem<String>(value: 'about', child: Text('About')),
-          const PopupMenuItem<String>(value: 'settings', child: Text('Settings')),
-          const PopupMenuItem<String>(value: 'logout', child: Text('Logout')),
-        ],
+        itemBuilder: (BuildContext context) {
+          final List<PopupMenuEntry<String>> menuItems = [
+            const PopupMenuItem<String>(value: 'about', child: Text('About')),
+            const PopupMenuItem<String>(value: 'settings', child: Text('Settings')),
+          ];
+
+          // Conditionally add the 'Manage Users' option if the user is an admin
+          if (authState.isAdmin) {
+            menuItems.add(
+              const PopupMenuItem<String>(
+                value: 'manage_users',
+                child: Text('Manage Users'),
+              ),
+            );
+          }
+
+          // Add the divider and logout option at the end
+          menuItems.addAll([
+            const PopupMenuDivider(),
+            const PopupMenuItem<String>(value: 'logout', child: Text('Logout')),
+          ]);
+
+          return menuItems;
+        },
       ),
       const SizedBox(width: 8.0),
     ];
@@ -106,11 +125,10 @@ class CommonAppBar extends ConsumerWidget implements PreferredSizeWidget {
               },
             ),
       actions: combinedActions,
-      bottom: bottom, // <--- NEW: Use the passed bottom widget
+      bottom: bottom,
     );
   }
 
   @override
-  Size get preferredSize => Size.fromHeight(kToolbarHeight + (bottom?.preferredSize.height ?? 0.0)); // Adjust preferred size if bottom is present
+  Size get preferredSize => Size.fromHeight(kToolbarHeight + (bottom?.preferredSize.height ?? 0.0));
 }
-

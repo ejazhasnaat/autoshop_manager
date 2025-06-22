@@ -4,17 +4,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:autoshop_manager/features/inventory/presentation/inventory_providers.dart';
 import 'package:autoshop_manager/widgets/common_app_bar.dart';
-import 'package:autoshop_manager/features/vehicle_model/presentation/vehicle_model_providers.dart'; // For vehicle models in filter
+import 'package:autoshop_manager/features/vehicle/presentation/vehicle_model_providers.dart'; // For vehicle models in filter
 import 'package:autoshop_manager/features/customer/presentation/screens/add_edit_customer_screen.dart'; // For IterableExtension
 import 'package:autoshop_manager/data/database/app_database.dart'; // For InventoryItem type
 import 'package:autoshop_manager/core/constants/app_constants.dart'; // For lowStockThreshold
-import 'package:autoshop_manager/features/settings/presentation/settings_providers.dart'; // <--- NEW IMPORT
+import 'package:autoshop_manager/features/settings/presentation/settings_providers.dart';
 
 class InventoryListScreen extends ConsumerStatefulWidget {
   const InventoryListScreen({super.key});
 
   @override
-  ConsumerState<InventoryListScreen> createState() => _InventoryListScreenState();
+  ConsumerState<InventoryListScreen> createState() =>
+      _InventoryListScreenState();
 }
 
 class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
@@ -73,14 +74,18 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
 
   void _applyFiltersAndSort() {
     final currentSortState = ref.read(inventoryListFilterStateProvider);
-    ref.read(inventoryNotifierProvider.notifier).applyFiltersAndSort(
-      searchTerm: _searchController.text.isEmpty ? null : _searchController.text,
-      make: _filterMake,
-      model: _filterModel,
-      year: _filterYear,
-      sortBy: currentSortState.sortBy,
-      sortAscending: currentSortState.sortAscending,
-    );
+    ref
+        .read(inventoryNotifierProvider.notifier)
+        .applyFiltersAndSort(
+          searchTerm: _searchController.text.isEmpty
+              ? null
+              : _searchController.text,
+          make: _filterMake,
+          model: _filterModel,
+          year: _filterYear,
+          sortBy: currentSortState.sortBy,
+          sortAscending: currentSortState.sortAscending,
+        );
   }
 
   void _clearFilters() {
@@ -91,7 +96,8 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
       _filterYear = null;
       _showFilterOptions = false;
     });
-    ref.read(inventoryListFilterStateProvider.notifier).state = InventoryListFilterState();
+    ref.read(inventoryListFilterStateProvider.notifier).state =
+        InventoryListFilterState();
     _applyFiltersAndSort();
   }
 
@@ -101,17 +107,22 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
     if (currentSortState.sortBy == column) {
       newSortAscending = !currentSortState.sortAscending;
     }
-    ref.read(inventoryNotifierProvider.notifier).applyFiltersAndSort(
-      searchTerm: _searchController.text.isEmpty ? null : _searchController.text,
-      make: _filterMake,
-      model: _filterModel,
-      year: _filterYear,
-      sortBy: column,
-      sortAscending: newSortAscending,
-    );
+    ref
+        .read(inventoryNotifierProvider.notifier)
+        .applyFiltersAndSort(
+          searchTerm: _searchController.text.isEmpty
+              ? null
+              : _searchController.text,
+          make: _filterMake,
+          model: _filterModel,
+          year: _filterYear,
+          sortBy: column,
+          sortAscending: newSortAscending,
+        );
   }
 
-  List<MapEntry<String, ({String label, int flex})>> _getVisibleColumnProperties() {
+  List<MapEntry<String, ({String label, int flex})>>
+  _getVisibleColumnProperties() {
     return _allColumnProperties.entries
         .where((entry) => _visibleColumns.contains(entry.key))
         .toList();
@@ -122,16 +133,21 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
     final vehicleModelsAsync = ref.watch(vehicleModelListProvider);
     final inventoryItemsAsync = ref.watch(inventoryNotifierProvider);
     final currentSortState = ref.watch(inventoryListFilterStateProvider);
-    final currentCurrencySymbol = ref.watch(currentCurrencySymbolProvider); // <--- WATCH CURRENCY
+    final currentCurrencySymbol = ref.watch(
+      currentCurrencySymbolProvider,
+    ); 
 
-    final List<MapEntry<String, ({String label, int flex})>> visibleColumnProperties = _getVisibleColumnProperties();
+    final List<MapEntry<String, ({String label, int flex})>>
+    visibleColumnProperties = _getVisibleColumnProperties();
 
     return Scaffold(
       appBar: CommonAppBar(
         title: 'Inventory',
         customActions: [
           IconButton(
-            icon: Icon(_showFilterOptions ? Icons.filter_alt_off : Icons.filter_alt),
+            icon: Icon(
+              _showFilterOptions ? Icons.filter_alt_off : Icons.filter_alt,
+            ),
             onPressed: () {
               setState(() {
                 _showFilterOptions = !_showFilterOptions;
@@ -143,9 +159,15 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
             icon: const Icon(Icons.view_column),
             onSelected: (String columnKey) {
               setState(() {
-                if (columnKey == 'name' || columnKey == 'quantity' || columnKey == 'salePrice') {
+                if (columnKey == 'name' ||
+                    columnKey == 'quantity' ||
+                    columnKey == 'salePrice') {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Cannot hide essential columns (Name, Quantity, Sale Price).')),
+                    const SnackBar(
+                      content: Text(
+                        'Cannot hide essential columns (Name, Quantity, Sale Price).',
+                      ),
+                    ),
                   );
                   return;
                 }
@@ -160,7 +182,10 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
               return _allColumnProperties.entries.map((entry) {
                 final columnKey = entry.key;
                 final columnLabel = entry.value.label;
-                final isCoreColumn = columnKey == 'name' || columnKey == 'quantity' || columnKey == 'salePrice';
+                final isCoreColumn =
+                    columnKey == 'name' ||
+                    columnKey == 'quantity' ||
+                    columnKey == 'salePrice';
                 return CheckedPopupMenuItem<String>(
                   value: columnKey,
                   checked: _visibleColumns.contains(columnKey),
@@ -187,7 +212,11 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
               decoration: InputDecoration(
                 labelText: 'Search by Name, Part Number, Supplier, Location',
                 prefixIcon: const Icon(Icons.search),
-                suffixIcon: (_searchController.text.isNotEmpty || _filterMake != null || _filterModel != null || _filterYear != null)
+                suffixIcon:
+                    (_searchController.text.isNotEmpty ||
+                        _filterMake != null ||
+                        _filterModel != null ||
+                        _filterYear != null)
                     ? IconButton(
                         icon: const Icon(Icons.clear),
                         onPressed: _clearFilters,
@@ -198,34 +227,48 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                   borderSide: BorderSide.none,
                 ),
                 filled: true,
-                fillColor: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+                fillColor: Theme.of(
+                  context,
+                ).colorScheme.surfaceVariant.withOpacity(0.3),
               ),
             ),
           ),
           if (_showFilterOptions)
             Card(
-              margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+              margin: const EdgeInsets.symmetric(
+                horizontal: 8.0,
+                vertical: 4.0,
+              ),
               elevation: 2,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: vehicleModelsAsync.when(
                   data: (vehicleModels) {
-                    final uniqueMakes = vehicleModels.map((vm) => vm.make).toSet().toList()..sort();
-                    
-                    final filteredModels = vehicleModels
-                        .where((vm) => vm.make == _filterMake)
-                        .map((vm) => vm.model)
-                        .toSet()
-                        .toList()..sort();
+                    final uniqueMakes =
+                        vehicleModels.map((vm) => vm.make).toSet().toList()
+                          ..sort();
+
+                    final filteredModels =
+                        vehicleModels
+                            .where((vm) => vm.make == _filterMake)
+                            .map((vm) => vm.model)
+                            .toSet()
+                            .toList()
+                          ..sort();
 
                     final selectedVehicleModel = vehicleModels.firstWhereOrNull(
-                            (vm) => vm.make == _filterMake && vm.model == _filterModel);
+                      (vm) =>
+                          vm.make == _filterMake && vm.model == _filterModel,
+                    );
 
                     final List<int> years = [];
                     if (selectedVehicleModel != null) {
                       final yearFrom = selectedVehicleModel.yearFrom ?? 1900;
-                      final yearTo = selectedVehicleModel.yearTo ?? DateTime.now().year;
+                      final yearTo =
+                          selectedVehicleModel.yearTo ?? DateTime.now().year;
                       for (int i = yearTo; i >= yearFrom; i--) {
                         years.add(i);
                       }
@@ -234,16 +277,25 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Filter by Vehicle Compatibility', style: Theme.of(context).textTheme.titleMedium),
+                        Text(
+                          'Filter by Vehicle Compatibility',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
                         const Divider(),
                         DropdownButtonFormField<String>(
                           value: _filterMake,
                           decoration: const InputDecoration(labelText: 'Make'),
                           items: [
-                            const DropdownMenuItem(value: null, child: Text('All Makes')),
+                            const DropdownMenuItem(
+                              value: null,
+                              child: Text('All Makes'),
+                            ),
                             ...uniqueMakes.map((make) {
-                              return DropdownMenuItem(value: make, child: Text(make));
-                            }).toList()
+                              return DropdownMenuItem(
+                                value: make,
+                                child: Text(make),
+                              );
+                            }).toList(),
                           ],
                           onChanged: (newValue) {
                             setState(() {
@@ -260,22 +312,28 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                           value: _filterModel,
                           decoration: const InputDecoration(labelText: 'Model'),
                           items: [
-                            const DropdownMenuItem(value: null, child: Text('All Models')),
+                            const DropdownMenuItem(
+                              value: null,
+                              child: Text('All Models'),
+                            ),
                             ...(_filterMake == null
                                 ? []
                                 : filteredModels.map((model) {
-                                    return DropdownMenuItem(value: model, child: Text(model));
-                                  }).toList())
+                                    return DropdownMenuItem(
+                                      value: model,
+                                      child: Text(model),
+                                    );
+                                  }).toList()),
                           ],
                           onChanged: _filterMake == null
                               ? null
                               : (newValue) {
-                            setState(() {
-                              _filterModel = newValue;
-                              _filterYear = null;
-                            });
-                            _applyFiltersAndSort();
-                          },
+                                  setState(() {
+                                    _filterModel = newValue;
+                                    _filterYear = null;
+                                  });
+                                  _applyFiltersAndSort();
+                                },
                           hint: const Text('Select Model'),
                         ),
                         const SizedBox(height: 8),
@@ -283,40 +341,55 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                           value: _filterYear,
                           decoration: const InputDecoration(labelText: 'Year'),
                           items: [
-                            const DropdownMenuItem(value: null, child: Text('All Years')),
+                            const DropdownMenuItem(
+                              value: null,
+                              child: Text('All Years'),
+                            ),
                             ...(_filterModel == null
                                 ? []
                                 : years.map((year) {
-                                    return DropdownMenuItem(value: year, child: Text(year.toString()));
-                                  }).toList())
+                                    return DropdownMenuItem(
+                                      value: year,
+                                      child: Text(year.toString()),
+                                    );
+                                  }).toList()),
                           ],
                           onChanged: _filterModel == null
                               ? null
                               : (newValue) {
-                            setState(() {
-                              _filterYear = newValue;
-                            });
-                            _applyFiltersAndSort();
-                          },
+                                  setState(() {
+                                    _filterYear = newValue;
+                                  });
+                                  _applyFiltersAndSort();
+                                },
                           hint: const Text('Select Year'),
                         ),
                       ],
                     );
                   },
                   loading: () => const Center(child: LinearProgressIndicator()),
-                  error: (err, stack) => Center(child: Text('Error loading vehicle models: $err')),
+                  error: (err, stack) =>
+                      Center(child: Text('Error loading vehicle models: $err')),
                 ),
               ),
             ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 8.0,
+            ),
             child: Row(
               children: [
                 ...visibleColumnProperties.map((entry) {
                   final columnKey = entry.key;
                   final columnLabel = entry.value.label;
                   final columnFlex = entry.value.flex;
-                  return _buildSortableHeader(columnKey, columnLabel, columnFlex, currentSortState);
+                  return _buildSortableHeader(
+                    columnKey,
+                    columnLabel,
+                    columnFlex,
+                    currentSortState,
+                  );
                 }).toList(),
                 const SizedBox(width: 80),
               ],
@@ -327,7 +400,9 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
               data: (inventoryItems) {
                 if (inventoryItems.isEmpty) {
                   return const Center(
-                    child: Text('No inventory items found. Add some or adjust filters!'),
+                    child: Text(
+                      'No inventory items found. Add some or adjust filters!',
+                    ),
                   );
                 }
                 return ListView.builder(
@@ -335,14 +410,23 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                   itemCount: inventoryItems.length,
                   itemBuilder: (context, index) {
                     final item = inventoryItems[index];
-                    final isLowStock = item.quantity < AppConstants.lowStockThreshold;
+                    final isLowStock =
+                        item.quantity < AppConstants.lowStockThreshold;
 
                     return Card(
-                      margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
+                      margin: const EdgeInsets.symmetric(
+                        vertical: 8.0,
+                        horizontal: 4.0,
+                      ),
                       elevation: 2,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16.0,
+                          vertical: 8.0,
+                        ),
                         child: Row(
                           children: [
                             ...visibleColumnProperties.map((entry) {
@@ -350,40 +434,73 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                               final columnFlex = entry.value.flex;
                               return Expanded(
                                 flex: columnFlex,
-                                child: _buildItemCell(item, columnKey, isLowStock, currentCurrencySymbol), // <--- PASS CURRENCY
+                                child: _buildItemCell(
+                                  item,
+                                  columnKey,
+                                  isLowStock,
+                                  currentCurrencySymbol,
+                                ),
                               );
                             }).toList(),
                             SizedBox(
                               width: 80,
                               child: Row(
-                                mainAxisSize: MainAxisSize.min,
                                 children: [
+                                  // --- FIXED: Added padding and constraints to IconButtons ---
                                   IconButton(
-                                    icon: Icon(Icons.edit, color: Theme.of(context).colorScheme.primary, size: 20),
+                                    padding: const EdgeInsets.all(4.0),
+                                    constraints: const BoxConstraints(),
+                                    visualDensity: VisualDensity.compact,
+                                    icon: Icon(
+                                      Icons.edit,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.primary,
+                                      size: 20,
+                                    ),
                                     onPressed: () {
                                       context.go('/inventory/edit/${item.id}');
                                     },
                                     tooltip: 'Edit',
                                   ),
                                   IconButton(
-                                    icon: const Icon(Icons.delete, color: Colors.red, size: 20),
+                                    padding: const EdgeInsets.all(4.0),
+                                    constraints: const BoxConstraints(),
+                                    visualDensity: VisualDensity.compact,
+                                    icon: const Icon(
+                                      Icons.delete,
+                                      color: Colors.red,
+                                      size: 20,
+                                    ),
                                     onPressed: () {
                                       showDialog(
                                         context: context,
                                         builder: (ctx) => AlertDialog(
                                           title: const Text('Confirm Deletion'),
-                                          content: Text('Are you sure you want to delete "${item.name}"?'),
+                                          content: Text(
+                                            'Are you sure you want to delete "${item.name}"?',
+                                          ),
                                           actions: [
                                             TextButton(
-                                              onPressed: () => Navigator.of(ctx).pop(),
+                                              onPressed: () =>
+                                                  Navigator.of(ctx).pop(),
                                               child: const Text('Cancel'),
                                             ),
                                             ElevatedButton(
                                               onPressed: () {
-                                                ref.read(inventoryNotifierProvider.notifier).deleteInventoryItem(item.id!);
+                                                ref
+                                                    .read(
+                                                      inventoryNotifierProvider
+                                                          .notifier,
+                                                    )
+                                                    .deleteInventoryItem(
+                                                      item.id!,
+                                                    );
                                                 Navigator.of(ctx).pop();
                                               },
-                                              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: Colors.red,
+                                              ),
                                               child: const Text('Delete'),
                                             ),
                                           ],
@@ -411,10 +528,17 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
     );
   }
 
-  Widget _buildSortableHeader(String columnKey, String label, int flex, InventoryListFilterState currentSortState) {
+  Widget _buildSortableHeader(
+    String columnKey,
+    String label,
+    int flex,
+    InventoryListFilterState currentSortState,
+  ) {
     final isCurrentSortColumn = currentSortState.sortBy == columnKey;
     final sortIcon = isCurrentSortColumn
-        ? (currentSortState.sortAscending ? Icons.arrow_upward : Icons.arrow_downward)
+        ? (currentSortState.sortAscending
+              ? Icons.arrow_upward
+              : Icons.arrow_downward)
         : null;
 
     return Expanded(
@@ -430,12 +554,18 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
               Flexible(
                 child: Text(
                   label,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
               if (sortIcon != null)
-                Icon(sortIcon, size: 16, color: Theme.of(context).colorScheme.primary),
+                Icon(
+                  sortIcon,
+                  size: 16,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
             ],
           ),
         ),
@@ -443,9 +573,18 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
     );
   }
 
-  Widget _buildItemCell(InventoryItem item, String columnKey, bool isLowStock, String currencySymbol) { // <--- ADDED CURRENCY PARAM
+  Widget _buildItemCell(
+    InventoryItem item,
+    String columnKey,
+    bool isLowStock,
+    String currencySymbol,
+  ) {
+    // <--- ADDED CURRENCY PARAM
     final TextStyle? textStyle = Theme.of(context).textTheme.bodyMedium;
-    final TextStyle? lowStockTextStyle = textStyle?.copyWith(color: Colors.orange.shade700, fontWeight: FontWeight.bold);
+    final TextStyle? lowStockTextStyle = textStyle?.copyWith(
+      color: Colors.orange.shade700,
+      fontWeight: FontWeight.bold,
+    );
 
     Widget content;
     switch (columnKey) {
@@ -457,7 +596,11 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
         );
         break;
       case 'partNumber':
-        content = Text(item.partNumber ?? 'N/A', style: textStyle, overflow: TextOverflow.ellipsis);
+        content = Text(
+          item.partNumber ?? 'N/A',
+          style: textStyle,
+          overflow: TextOverflow.ellipsis,
+        );
         break;
       case 'quantity':
         content = Text(
@@ -474,16 +617,30 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
         );
         break;
       case 'supplier':
-        content = Text(item.supplier ?? 'N/A', style: textStyle, overflow: TextOverflow.ellipsis);
+        content = Text(
+          item.supplier ?? 'N/A',
+          style: textStyle,
+          overflow: TextOverflow.ellipsis,
+        );
         break;
       case 'stockLocation':
-        content = Text(item.stockLocation ?? 'N/A', style: textStyle, overflow: TextOverflow.ellipsis);
+        content = Text(
+          item.stockLocation ?? 'N/A',
+          style: textStyle,
+          overflow: TextOverflow.ellipsis,
+        );
         break;
       case 'vehicleCompatibility':
-        final String compatibilityText = item.vehicleMake != null && item.vehicleMake!.isNotEmpty
-            ? '${item.vehicleMake!} ${item.vehicleModel ?? ''} (${item.vehicleYearFrom ?? ''}-${item.vehicleYearTo ?? ''})'.trim()
+        final String compatibilityText =
+            item.vehicleMake != null && item.vehicleMake!.isNotEmpty
+            ? '${item.vehicleMake!} ${item.vehicleModel ?? ''} (${item.vehicleYearFrom ?? ''}-${item.vehicleYearTo ?? ''})'
+                  .trim()
             : 'N/A';
-        content = Text(compatibilityText, style: textStyle, overflow: TextOverflow.ellipsis);
+        content = Text(
+          compatibilityText,
+          style: textStyle,
+          overflow: TextOverflow.ellipsis,
+        );
         break;
       default:
         content = const SizedBox.shrink();
@@ -519,4 +676,3 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
     }
   }
 }
-

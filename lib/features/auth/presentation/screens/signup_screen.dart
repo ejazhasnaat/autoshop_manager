@@ -2,8 +2,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:autoshop_manager/data/database/app_database.dart'; // For User type
-import 'package:autoshop_manager/features/auth/presentation/auth_providers.dart'; // <--- ONLY IMPORT FROM HERE for providers and AuthUser
+import 'package:autoshop_manager/data/database/app_database.dart'; 
+import 'package:autoshop_manager/features/auth/presentation/auth_providers.dart';
+import 'package:autoshop_manager/widgets/common_app_bar.dart';
 
 class SignUpScreen extends ConsumerStatefulWidget {
   const SignUpScreen({super.key});
@@ -16,10 +17,10 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  String _selectedRole = 'User'; // Default role
+  String _selectedRole = 'User'; 
   bool _isLoading = false;
 
-  final List<String> _roles = ['Admin', 'User']; // Available roles
+  final List<String> _roles = ['Admin', 'User'];
 
   @override
   void dispose() {
@@ -51,7 +52,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
         _usernameController.clear();
         _passwordController.clear();
         setState(() {
-          _selectedRole = 'User'; // Reset dropdown
+          _selectedRole = 'User';
         });
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -83,17 +84,15 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // <--- FIX: Directly access the user from the watched AuthState --->
-    final currentUserState = ref.watch(authNotifierProvider); // This is AuthState, not AuthNotifier
-    final currentLoggedInUserId = currentUserState.user?.id; // Access user directly from AuthState
-
+    final currentUserState = ref.watch(authNotifierProvider);
+    final currentLoggedInUserId = currentUserState.user?.id;
 
     final usersAsync = ref.watch(allUsersProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Manage Users'),
-        elevation: 0,
+      appBar: const CommonAppBar(
+        title: 'Manage Users',
+        showBackButton: true,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -138,7 +137,6 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                             return 'Password must be at least 6 characters';
                           }
                           return null;
-                          // You might want to add a regex for password strength here
                         },
                       ),
                       const SizedBox(height: 16),
@@ -204,7 +202,6 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                           trailing: IconButton(
                             icon: const Icon(Icons.delete, color: Colors.red),
                             onPressed: () {
-                              // <--- FIX: Compare with currentLoggedInUserId directly --->
                               if (user.id == currentLoggedInUserId) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(content: Text('Cannot delete currently logged-in user.')),
@@ -224,7 +221,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                                     ElevatedButton(
                                       onPressed: () {
                                         Navigator.of(ctx).pop();
-                                        _deleteUser(user.id!); // Pass non-nullable ID
+                                        _deleteUser(user.id!);
                                       },
                                       style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
                                       child: const Text('Delete'),
@@ -247,4 +244,3 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     );
   }
 }
-

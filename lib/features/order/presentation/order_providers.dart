@@ -5,26 +5,28 @@ import 'package:autoshop_manager/data/repositories/order_repository.dart';
 
 // StreamProvider for a single order with details
 final orderByIdProvider = StreamProvider.family<OrderWithDetails?, int>((ref, orderId) {
-  // We're using a FutureProvider here that automatically converts to Stream
-  // by listening for changes, this implicitly handles refreshing.
   return Stream.fromFuture(ref.read(orderRepositoryProvider).getOrderWithDetails(orderId));
 });
 
 // StreamProvider for all orders with details
 final ordersListProvider = StreamProvider<List<OrderWithDetails>>((ref) {
-  // Similarly, using a FutureProvider. This will cause a re-fetch of all orders
-  // whenever any action by OrderNotifier modifies the underlying data.
   return Stream.fromFuture(ref.read(orderRepositoryProvider).getAllOrdersWithDetails());
 });
 
-// AsyncNotifierProvider for sales by item report
+// Provider for sales by item report
 final salesByItemReportProvider = FutureProvider<List<SalesByItem>>((ref) async {
   return ref.read(orderRepositoryProvider).getSalesByItemReport();
 });
 
-// AsyncNotifierProvider for sales by customer report
+// Provider for sales by customer report
 final salesByCustomerReportProvider = FutureProvider<List<SalesByCustomer>>((ref) async {
   return ref.read(orderRepositoryProvider).getSalesByCustomerReport();
+});
+
+// --- FIX: Added the missing provider for total sales ---
+final totalSalesProvider = FutureProvider<double>((ref) async {
+  // This follows the existing pattern of calling a method on the repository.
+  return ref.read(orderRepositoryProvider).getTotalSales();
 });
 
 

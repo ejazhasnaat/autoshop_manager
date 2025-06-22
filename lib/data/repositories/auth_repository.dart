@@ -7,17 +7,15 @@ import 'package:crypto/crypto.dart';
 import 'package:autoshop_manager/data/database/app_database.dart'; // <--- IMPORT AppDatabase here
 import 'package:autoshop_manager/data/repositories/vehicle_model_repository.dart'; // <--- NEW: Import VehicleModelRepository for seeding
 import 'package:autoshop_manager/features/auth/presentation/auth_providers.dart'; // <--- NEW: Import AuthUser from here
-
-// CENTRALIZED APP DATABASE PROVIDER: Define it once here for all repositories to use
-final appDatabaseProvider = Provider<AppDatabase>((ref) {
-  return AppDatabase();
-});
+import 'package:autoshop_manager/core/providers.dart';
 
 // AuthRepository Provider
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return AuthRepository(
     ref.read(appDatabaseProvider),
-    ref.read(vehicleModelRepositoryProvider), // Inject VehicleModelRepository for seeding
+    ref.read(
+      vehicleModelRepositoryProvider,
+    ), // Inject VehicleModelRepository for seeding
   );
 });
 
@@ -29,9 +27,13 @@ class AuthRepository {
 
   Future<AuthUser?> login(String username, String password) async {
     final hashedPassword = _hashPassword(password);
-    final user = await (_db.select(_db.users)
-          ..where((u) => u.username.equals(username) & u.passwordHash.equals(hashedPassword)))
-        .getSingleOrNull();
+    final user =
+        await (_db.select(_db.users)..where(
+              (u) =>
+                  u.username.equals(username) &
+                  u.passwordHash.equals(hashedPassword),
+            ))
+            .getSingleOrNull();
 
     if (user != null) {
       return AuthUser(id: user.id!, username: user.username, role: user.role);
@@ -40,27 +42,45 @@ class AuthRepository {
   }
 
   Future<void> initializeAdminUser() async {
-    final adminExists = await (_db.select(_db.users)..where((u) => u.username.equals(AppConstants.defaultAdminUsername))).getSingleOrNull();
+    final adminExists =
+        await (_db.select(_db.users)..where(
+              (u) => u.username.equals(AppConstants.defaultAdminUsername),
+            ))
+            .getSingleOrNull();
 
     if (adminExists == null) {
-      await _db.into(_db.users).insert(UsersCompanion.insert(
-            username: AppConstants.defaultAdminUsername,
-            passwordHash: _hashPassword(AppConstants.defaultAdminPin),
-            role: const Value('Admin'),
-          ));
+      await _db
+          .into(_db.users)
+          .insert(
+            UsersCompanion.insert(
+              username: AppConstants.defaultAdminUsername,
+              passwordHash: _hashPassword(AppConstants.defaultAdminPin),
+              role: const Value('Admin'),
+            ),
+          );
     }
     // Seed default vehicle models after users are set up
-    await _vehicleModelRepo.seedDefaultVehicleModels('assets/vehicle_models.json');
+    await _vehicleModelRepo.seedDefaultVehicleModels(
+      'assets/vehicle_models.json',
+    );
   }
 
-  Future<AuthUser?> signup(String username, String password, String role) async {
+  Future<AuthUser?> signup(
+    String username,
+    String password,
+    String role,
+  ) async {
     final hashedPassword = _hashPassword(password);
     try {
-      final userId = await _db.into(_db.users).insert(UsersCompanion.insert(
-            username: username,
-            passwordHash: hashedPassword,
-            role: Value(role),
-          ));
+      final userId = await _db
+          .into(_db.users)
+          .insert(
+            UsersCompanion.insert(
+              username: username,
+              passwordHash: hashedPassword,
+              role: Value(role),
+            ),
+          );
       if (userId > 0) {
         return AuthUser(id: userId, username: username, role: role);
       }
@@ -76,7 +96,9 @@ class AuthRepository {
   }
 
   Future<bool> deleteUser(int userId) async {
-    final count = await (_db.delete(_db.users)..where((u) => u.id.equals(userId))).go();
+    final count = await (_db.delete(
+      _db.users,
+    )..where((u) => u.id.equals(userId))).go();
     return count > 0;
   }
 
@@ -86,4 +108,3 @@ class AuthRepository {
     return digest.toString();
   }
 }
-

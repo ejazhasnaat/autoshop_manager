@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart'
     hide
         Column; // Keep hide Column to avoid conflict if other imports are added
-import 'package:autoshop_manager/data/repositories/auth_repository.dart'; // For appDatabaseProvider
+import 'package:autoshop_manager/core/providers.dart';
 import 'package:autoshop_manager/data/repositories/inventory_repository.dart'; // To decrement stock
 
 final orderRepositoryProvider = Provider<OrderRepository>((ref) {
@@ -20,6 +20,8 @@ class OrderRepository {
 
   OrderRepository(this._db, this._inventoryRepo);
 
+  // ... (createOrder, getOrderWithDetails, getAllOrdersWithDetails, deleteOrder, updateOrderStatus methods are unchanged) ...
+  
   /// Creates a new order and its associated order items, then decrements inventory.
   Future<bool> createOrder({
     required int customerId,
@@ -41,13 +43,17 @@ class OrderRepository {
                 customerId: customerId,
                 orderDate: DateTime.now(),
                 totalAmount: Value(totalAmount),
-                status: Value('Completed'), // Assuming all orders are completed upon creation for simplicity
+                status: Value(
+                  'Completed',
+                ), // Assuming all orders are completed upon creation for simplicity
               ),
             );
 
         // 2. Create Order Items and decrement inventory
         for (var itemData in items) {
-          await _db.into(_db.orderItems).insert(
+          await _db
+              .into(_db.orderItems)
+              .insert(
                 OrderItemsCompanion.insert(
                   orderId: orderId,
                   itemId: itemData['itemId'] as int,
@@ -62,7 +68,9 @@ class OrderRepository {
           );
           if (!success) {
             // If stock decrement fails, roll back the transaction
-            throw Exception('Failed to decrement stock for item ${itemData['itemId']}');
+            throw Exception(
+              'Failed to decrement stock for item ${itemData['itemId']}',
+            );
           }
         }
         return true;
@@ -78,7 +86,10 @@ class OrderRepository {
   Future<OrderWithDetails?> getOrderWithDetails(int orderId) async {
     // Use cascade operator to properly chain the where clause
     final query = _db.select(_db.orders).join([
-      innerJoin(_db.customers, _db.customers.id.equalsExp(_db.orders.customerId)),
+      innerJoin(
+        _db.customers,
+        _db.customers.id.equalsExp(_db.orders.customerId),
+      ),
     ])..where(_db.orders.id.equals(orderId));
 
     final result = await query.getSingleOrNull();
@@ -92,7 +103,10 @@ class OrderRepository {
 
     // Now fetch order items for this order and join with inventory items
     final itemQuery = _db.select(_db.orderItems).join([
-      innerJoin(_db.inventoryItems, _db.inventoryItems.id.equalsExp(_db.orderItems.itemId)),
+      innerJoin(
+        _db.inventoryItems,
+        _db.inventoryItems.id.equalsExp(_db.orderItems.itemId),
+      ),
     ])..where(_db.orderItems.orderId.equals(order.id));
 
     final itemResults = await itemQuery.get();
@@ -112,9 +126,13 @@ class OrderRepository {
   }
 
   /// Retrieves all orders with their associated customer and items.
-  Future<List<OrderWithDetails>> getAllOrdersWithDetails() async { // Renamed for clarity
+  Future<List<OrderWithDetails>> getAllOrdersWithDetails() async {
+    // Renamed for clarity
     final query = _db.select(_db.orders).join([
-      innerJoin(_db.customers, _db.customers.id.equalsExp(_db.orders.customerId)),
+      innerJoin(
+        _db.customers,
+        _db.customers.id.equalsExp(_db.orders.customerId),
+      ),
     ]);
 
     final results = await query.get();
@@ -126,7 +144,10 @@ class OrderRepository {
 
       // Fetch items for each order
       final itemQuery = _db.select(_db.orderItems).join([
-        innerJoin(_db.inventoryItems, _db.inventoryItems.id.equalsExp(_db.orderItems.itemId)),
+        innerJoin(
+          _db.inventoryItems,
+          _db.inventoryItems.id.equalsExp(_db.orderItems.itemId),
+        ),
       ])..where(_db.orderItems.orderId.equals(order.id));
 
       final itemResults = await itemQuery.get();
@@ -138,21 +159,27 @@ class OrderRepository {
         );
       }).toList();
 
-      ordersWithDetails.add(OrderWithDetails(
-        order: order,
-        customer: customer,
-        items: orderItemsWithInventory,
-      ));
+      ordersWithDetails.add(
+        OrderWithDetails(
+          order: order,
+          customer: customer,
+          items: orderItemsWithInventory,
+        ),
+      );
     }
     // Sort by order date descending
-    ordersWithDetails.sort((a, b) => b.order.orderDate.compareTo(a.order.orderDate));
+    ordersWithDetails.sort(
+      (a, b) => b.order.orderDate.compareTo(a.order.orderDate),
+    );
     return ordersWithDetails;
   }
 
   /// Deletes an order and its associated order items.
   Future<bool> deleteOrder(int orderId) async {
     // Due to KeyAction.cascade on OrderItems, deleting the order will delete its items.
-    final count = await (_db.delete(_db.orders)..where((o) => o.id.equals(orderId))).go();
+    final count = await (_db.delete(
+      _db.orders,
+    )..where((o) => o.id.equals(orderId))).go();
     return count > 0;
   }
 
@@ -166,16 +193,23 @@ class OrderRepository {
     return _db.update(_db.orders).replace(updatedOrder);
   }
 
+
   // --- Reporting Methods ---
 
   /// Retrieves sales data grouped by inventory item.
   Future<List<SalesByItem>> getSalesByItemReport() async {
     // Use selectOnly for aggregate queries and let Drift infer the types
     final totalQuantityColumn = _db.orderItems.quantity.sum();
-    final totalRevenueColumn = (_db.orderItems.quantity.dartCast<double>() * _db.orderItems.priceAtSale).sum();
+    final totalRevenueColumn =
+        (_db.orderItems.quantity.dartCast<double>() *
+                _db.orderItems.priceAtSale)
+            .sum();
 
     final query = _db.selectOnly(_db.orderItems).join([
-      innerJoin(_db.inventoryItems, _db.inventoryItems.id.equalsExp(_db.orderItems.itemId)),
+      innerJoin(
+        _db.inventoryItems,
+        _db.inventoryItems.id.equalsExp(_db.orderItems.itemId),
+      ),
     ]);
 
     query
@@ -206,7 +240,10 @@ class OrderRepository {
     final totalSpentColumn = _db.orders.totalAmount.sum();
 
     final query = _db.selectOnly(_db.orders).join([
-      innerJoin(_db.customers, _db.customers.id.equalsExp(_db.orders.customerId)),
+      innerJoin(
+        _db.customers,
+        _db.customers.id.equalsExp(_db.orders.customerId),
+      ),
     ]);
 
     query
@@ -229,9 +266,26 @@ class OrderRepository {
       );
     }).toList();
   }
+
+  /// **--- NEW METHOD ---**
+  /// Calculates the total revenue from all completed orders.
+  Future<double> getTotalSales() async {
+    final totalAmountColumn = _db.orders.totalAmount.sum();
+    
+    // Construct the query to sum the totalAmount column
+    final query = _db.selectOnly(_db.orders)
+      ..addColumns([totalAmountColumn])
+      ..where(_db.orders.status.equals('Completed'));
+      
+    // Execute the query and get a single result
+    final result = await query.getSingleOrNull();
+    
+    // Read the summed value from the result, defaulting to 0.0 if null
+    return result?.read(totalAmountColumn) ?? 0.0;
+  }
 }
 
-// Custom data class to hold joined Order, Customer, and OrderItems data
+// ... (Data classes at the end of the file are unchanged) ...
 class OrderWithDetails {
   final Order order;
   final Customer customer;
@@ -244,7 +298,6 @@ class OrderWithDetails {
   });
 }
 
-// Custom data class to hold joined OrderItem and InventoryItem data
 class OrderItemWithInventory {
   final OrderItem orderItem;
   final InventoryItem inventoryItem;
@@ -255,7 +308,6 @@ class OrderItemWithInventory {
   });
 }
 
-// Data class for Sales by Item report
 class SalesByItem {
   final int itemId;
   final String itemName;
@@ -270,7 +322,6 @@ class SalesByItem {
   });
 }
 
-// Data class for Sales by Customer report
 class SalesByCustomer {
   final int customerId;
   final String customerName;

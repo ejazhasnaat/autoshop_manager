@@ -1,50 +1,77 @@
 // lib/features/settings/presentation/settings_providers.dart
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:autoshop_manager/data/repositories/preference_repository.dart'; // Import the new repository
 
-// StreamProvider for the current user's preferences (including currency)
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:autoshop_manager/data/repositories/preference_repository.dart';
+
+// This StreamProvider correctly opens a connection to the repository stream.
+// It will now provide the full UserPreferences object, including service intervals.
 final userPreferencesStreamProvider = StreamProvider<UserPreferences>((ref) {
-  return ref.read(preferenceRepositoryProvider).getUserPreferencesStream();
+  final preferenceRepository = ref.watch(preferenceRepositoryProvider);
+  // The repository method was updated to get all preferences, so we use that now.
+  // We'll convert the Future to a Stream for compatibility.
+  return Stream.fromFuture(preferenceRepository.getPreferences());
 });
 
-// Provider for the currently selected currency symbol
+// This provider correctly derives the currency symbol from the stream above.
+// No changes are needed here.
 final currentCurrencySymbolProvider = Provider<String>((ref) {
-  // Watch the user preferences stream
   final preferencesAsync = ref.watch(userPreferencesStreamProvider);
 
-  // Return the default currency from preferences, or a fallback 'PKR' if loading/error
   return preferencesAsync.when(
     data: (prefs) => prefs.defaultCurrency,
-    loading: () => 'PKR', // Default currency while loading
+    loading: () => 'PKR',
     error: (err, stack) {
-      print('Error watching currency: $err');
-      return 'PKR'; // Fallback on error
+      print('Error in currentCurrencySymbolProvider: $err');
+      return 'PKR';
     },
   );
 });
 
-// StateNotifier to manage updating settings
-final settingsNotifierProvider = StateNotifierProvider<SettingsNotifier, void>((
-  ref,
-) {
+// This StateNotifierProvider exposes the "write" methods to the UI.
+final settingsNotifierProvider =
+    StateNotifierProvider<SettingsNotifier, AsyncValue<void>>((ref) {
   return SettingsNotifier(ref.read(preferenceRepositoryProvider));
 });
 
-class SettingsNotifier extends StateNotifier<void> {
+class SettingsNotifier extends StateNotifier<AsyncValue<void>> {
   final PreferenceRepository _preferenceRepository;
 
-  SettingsNotifier(this._preferenceRepository) : super(null);
+  SettingsNotifier(this._preferenceRepository) : super(const AsyncData(null));
 
+  /// Updates the user's default currency.
   Future<bool> updateDefaultCurrency(String currencySymbol) async {
-    final success = await _preferenceRepository.updateDefaultCurrency(
-      currencySymbol,
-    );
-    if (success) {
-      // Invalidate the stream provider to trigger a re-fetch and update all watchers
-      // This is crucial for UI elements to react to the currency change.
-      _preferenceRepository
-          .getUserPreferencesStream(); // Calling it will trigger a re-fetch implicitly via the stream
+    state = const AsyncLoading(); 
+    try {
+      // The repository now uses a unified save method, so we need to get current prefs first.
+      final currentPrefs = await _preferenceRepository.getPreferences();
+      final newPrefs = UserPreferences(
+        defaultCurrency: currencySymbol,
+        engineOilIntervalKm: currentPrefs.engineOilIntervalKm,
+        engineOilIntervalMonths: currentPrefs.engineOilIntervalMonths,
+        gearOilIntervalKm: currentPrefs.gearOilIntervalKm,
+        gearOilIntervalMonths: currentPrefs.gearOilIntervalMonths,
+        generalServiceIntervalKm: currentPrefs.generalServiceIntervalKm,
+        generalServiceIntervalMonths: currentPrefs.generalServiceIntervalMonths
+      );
+      await _preferenceRepository.savePreferences(newPrefs);
+      state = const AsyncData(null);
+      return true;
+    } catch (e, stack) {
+      state = AsyncError(e, stack);
+      return false;
     }
-    return success;
+  }
+
+  // --- NEWLY ADDED: Method to save all preference settings at once ---
+  Future<bool> savePreferences(UserPreferences preferences) async {
+    state = const AsyncLoading();
+    try {
+      await _preferenceRepository.savePreferences(preferences);
+      state = const AsyncData(null);
+      return true;
+    } catch(e, stack) {
+      state = AsyncError(e, stack);
+      return false;
+    }
   }
 }

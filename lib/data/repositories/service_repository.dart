@@ -1,12 +1,12 @@
 // lib/data/repositories/service_repository.dart
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:drift/drift.dart'
-    hide Column; // Import Value for inserts/updates
-import 'package:autoshop_manager/data/database/app_database.dart'; // For AppDatabase and Service types
-import 'package:autoshop_manager/data/repositories/auth_repository.dart'; // For appDatabaseProvider
+import 'package:drift/drift.dart' hide Column;
+import 'package:autoshop_manager/core/providers.dart';
+import 'package:autoshop_manager/data/database/app_database.dart';
 
 // Riverpod Provider for ServiceRepository
 final serviceRepositoryProvider = Provider<ServiceRepository>((ref) {
+  // This now correctly and unambiguously reads the provider from core/providers.dart
   return ServiceRepository(ref.read(appDatabaseProvider));
 });
 
@@ -34,7 +34,6 @@ class ServiceRepository {
 
   /// Updates an existing service in the database.
   Future<bool> updateService(Service service) async {
-    // replace will update the row identified by the primary key (id)
     return _db.update(_db.services).replace(service);
   }
 

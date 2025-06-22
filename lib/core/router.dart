@@ -14,14 +14,17 @@ import 'package:autoshop_manager/features/order/presentation/screens/add_edit_or
 import 'package:autoshop_manager/features/order/presentation/screens/order_detail_screen.dart';
 import 'package:autoshop_manager/features/service/presentation/screens/service_list_screen.dart';
 import 'package:autoshop_manager/features/service/presentation/screens/add_edit_service_screen.dart';
-import 'package:autoshop_manager/features/vehicle_model/presentation/screens/vehicle_model_list_screen.dart';
-import 'package:autoshop_manager/features/vehicle_model/presentation/screens/add_edit_vehicle_model_screen.dart';
+import 'package:autoshop_manager/features/vehicle/presentation/screens/vehicle_model_list_screen.dart';
+import 'package:autoshop_manager/features/vehicle/presentation/screens/add_edit_vehicle_model_screen.dart';
 import 'package:autoshop_manager/features/reports/presentation/screens/reports_screen.dart';
-import 'package:autoshop_manager/features/settings/presentation/screens/settings_screen.dart'; // <--- NEW IMPORT
+import 'package:autoshop_manager/features/settings/presentation/screens/settings_screen.dart';
+import 'package:autoshop_manager/features/vehicle/presentation/screens/vehicle_detail_screen.dart';
+import 'package:autoshop_manager/features/vehicle/presentation/screens/add_edit_vehicle_screen.dart';
+import 'package:autoshop_manager/data/database/app_database.dart';
 
 
 final GoRouter appRouter = GoRouter(
-  initialLocation: '/login', // Set initial route to login
+  initialLocation: '/login',
   routes: [
     GoRoute(
       path: '/login',
@@ -56,6 +59,38 @@ final GoRouter appRouter = GoRouter(
           ),
         ),
       ],
+    ),
+    GoRoute(
+      path: '/vehicles',
+      builder: (context, state) => const SizedBox(), 
+      routes: [
+        // --- ADDED: New route for adding a vehicle in "draft mode" ---
+        GoRoute(
+          path: 'add_draft',
+          builder: (context, state) => const AddEditVehicleScreen(
+            isDraftMode: true,
+          ),
+        ),
+        GoRoute(
+          path: 'add/:customerId', 
+          builder: (context, state) => AddEditVehicleScreen(
+            customerId: int.parse(state.pathParameters['customerId']!),
+          ),
+        ),
+        GoRoute(
+          path: 'edit/:id', 
+          builder: (context, state) => AddEditVehicleScreen(
+            vehicleId: int.parse(state.pathParameters['id']!),
+            customerId: int.parse(state.uri.queryParameters['customerId']!),
+          ),
+        ),
+        GoRoute(
+          path: ':id', 
+          builder: (context, state) => VehicleDetailScreen(
+            vehicleId: int.parse(state.pathParameters['id']!),
+          ),
+        ),
+      ]
     ),
     GoRoute(
       path: '/inventory',
@@ -114,7 +149,7 @@ final GoRouter appRouter = GoRouter(
           builder: (context, state) => const AddEditVehicleModelScreen(),
         ),
         GoRoute(
-          path: 'edit', // Edit route expects make and model in query parameters
+          path: 'edit',
           builder: (context, state) => AddEditVehicleModelScreen(
             make: state.uri.queryParameters['make'],
             model: state.uri.queryParameters['model'],
@@ -127,9 +162,8 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) => const ReportsScreen(),
     ),
     GoRoute(
-      path: '/settings', // <--- NEW ROUTE FOR SETTINGS SCREEN
+      path: '/settings',
       builder: (context, state) => const SettingsScreen(),
     ),
   ],
 );
-
