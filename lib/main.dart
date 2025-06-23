@@ -4,12 +4,16 @@ import 'package:autoshop_manager/data/database/app_database.dart';
 import 'package:autoshop_manager/data/repositories/preference_repository.dart';
 import 'package:autoshop_manager/features/reminders/domain/reminder_service.dart';
 import 'package:autoshop_manager/services/notification_service.dart';
-import 'package:drift/drift.dart'
-    show Value; // <-- ADDED: Import for using Value()
+import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:autoshop_manager/core/router.dart';
 import 'package:workmanager/workmanager.dart';
+
+// --- UPDATED IMPORTS ---
+import 'package:autoshop_manager/core/providers.dart';
+import 'package:autoshop_manager/features/reminders/data/reminder_repository.dart';
+
 
 @pragma('vm:entry-point')
 void callbackDispatcher() {
@@ -30,15 +34,12 @@ void callbackDispatcher() {
         final result = await reminderService.calculateNextReminder(vehicle);
 
         if (result != null) {
-          // --- FIXED: Save the calculated reminder date back to the database ---
           final vehicleToUpdate = vehicle.copyWith(
             nextReminderDate: Value(result.date),
             nextReminderType: Value(result.type),
           );
           await db.vehicleDao.updateVehicle(vehicleToUpdate);
-          // --- End of Fix ---
-
-          // If a reminder is due within the next 7 days, show a notification
+          
           if (result.date.isBefore(
             DateTime.now().add(const Duration(days: 7)),
           )) {
@@ -68,17 +69,22 @@ const reminderTask = "com.autoshop_manager.reminderCheck";
 // --- Main Application Entry Point ---
 
 Future<void> main() async {
-  // It ensures that Flutter's engine is ready.
+  // Ensure Flutter engine is ready
   WidgetsFlutterBinding.ensureInitialized();
-
-  // --- App Initialization ---
+  
+  // --- UPDATED: Create single instances of DB and Repo at startup ---
+  final db = AppDatabase();
+  final reminderRepo = ReminderRepository(db);
+  
+  // Call the new repository method to seed the data
+  await reminderRepo.seedTemplatesFromJson();
+  
+  // Initialize background services
   await notificationService.init();
-
-  // Initialize Workmanager only on supported platforms (Android/iOS)
   if (Platform.isAndroid || Platform.isIOS) {
     await Workmanager().initialize(
       callbackDispatcher,
-      isInDebugMode: false, // Set to false for production releases
+      isInDebugMode: false,
     );
     await Workmanager().registerPeriodicTask(
       reminderTask,
@@ -92,8 +98,14 @@ Future<void> main() async {
     Workmanager().registerOneOffTask("1", "reminderCheckOneOff");
   }
 
-  // It sets up Riverpod for state management.
-  runApp(const ProviderScope(child: MyApp()));
+  // --- UPDATED: Override both providers with our single instances ---
+  runApp(ProviderScope(
+    overrides: [
+      appDatabaseProvider.overrideWithValue(db),
+      reminderRepositoryProvider.overrideWithValue(reminderRepo),
+    ],
+    child: const MyApp(),
+  ));
 }
 
 class MyApp extends ConsumerWidget {

@@ -30,6 +30,28 @@ class UserPreferences {
     this.generalServiceIntervalKm = 10000,
     this.generalServiceIntervalMonths = 12,
   });
+
+  // --- FIX: Added the copyWith method ---
+  // This allows creating a new instance with updated values while preserving the old ones.
+  UserPreferences copyWith({
+    String? defaultCurrency,
+    int? engineOilIntervalKm,
+    int? engineOilIntervalMonths,
+    int? gearOilIntervalKm,
+    int? gearOilIntervalMonths,
+    int? generalServiceIntervalKm,
+    int? generalServiceIntervalMonths,
+  }) {
+    return UserPreferences(
+      defaultCurrency: defaultCurrency ?? this.defaultCurrency,
+      engineOilIntervalKm: engineOilIntervalKm ?? this.engineOilIntervalKm,
+      engineOilIntervalMonths: engineOilIntervalMonths ?? this.engineOilIntervalMonths,
+      gearOilIntervalKm: gearOilIntervalKm ?? this.gearOilIntervalKm,
+      gearOilIntervalMonths: gearOilIntervalMonths ?? this.gearOilIntervalMonths,
+      generalServiceIntervalKm: generalServiceIntervalKm ?? this.generalServiceIntervalKm,
+      generalServiceIntervalMonths: generalServiceIntervalMonths ?? this.generalServiceIntervalMonths,
+    );
+  }
 }
 
 // Provider for the repository

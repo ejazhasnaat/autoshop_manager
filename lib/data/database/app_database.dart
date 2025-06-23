@@ -7,37 +7,65 @@ import 'package:drift/native.dart';
 
 part 'app_database.g.dart';
 
+// --- TABLE DEFINITIONS ---
+
+@DataClassName('ShopSetting')
+class ShopSettings extends Table {
+  IntColumn get id => integer().withDefault(const Constant(1))();
+  TextColumn get workshopName =>
+      text().withDefault(const Constant('Your Workshop'))();
+  TextColumn get workshopAddress =>
+      text().withDefault(const Constant('123 Auto Lane'))();
+  TextColumn get workshopPhoneNumber =>
+      text().withDefault(const Constant('555-123-4567'))();
+  TextColumn get workshopManagerName =>
+      text().withDefault(const Constant('The Manager'))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+@DataClassName('MessageTemplate')
+class MessageTemplates extends Table {
+  TextColumn get templateType => text()();
+  TextColumn get title => text().withLength(min: 2, max: 100)();
+  TextColumn get content => text()();
+  @override
+  Set<Column> get primaryKey => {templateType};
+}
+
 @DataClassName('ServiceHistory')
 class ServiceHistories extends Table {
   IntColumn get id => integer().autoIncrement()();
-  IntColumn get vehicleId => integer().references(Vehicles, #id, onDelete: KeyAction.cascade)();
+  IntColumn get vehicleId =>
+      integer().references(Vehicles, #id, onDelete: KeyAction.cascade)();
   TextColumn get serviceType => text()();
   DateTimeColumn get serviceDate => dateTime()();
   IntColumn get mileage => integer()();
 }
 
-@DriftAccessor(tables: [ServiceHistories])
-class ServiceHistoryDao extends DatabaseAccessor<AppDatabase> with _$ServiceHistoryDaoMixin {
-  ServiceHistoryDao(AppDatabase db) : super(db);
-  Future<void> addServiceHistory(ServiceHistoriesCompanion entry) => into(serviceHistories).insert(entry);
-  Future<List<ServiceHistory>> getHistoryForVehicle(int vehicleId) =>
-      (select(serviceHistories)..where((tbl) => tbl.vehicleId.equals(vehicleId))..orderBy([(t) => OrderingTerm(expression: t.serviceDate)])).get();
-}
-
-@DriftAccessor(tables: [Vehicles])
-class VehicleDao extends DatabaseAccessor<AppDatabase> with _$VehicleDaoMixin {
-  VehicleDao(AppDatabase db) : super(db);
-  Future<List<Vehicle>> getAllVehicles() => select(vehicles).get();
-  Future<Vehicle?> getVehicleById(int id) => (select(vehicles)..where((v) => v.id.equals(id))).getSingleOrNull();
-  Future<void> insertVehicle(VehiclesCompanion vehicle) => into(vehicles).insert(vehicle);
-  Future<bool> updateVehicle(Vehicle vehicle) => update(vehicles).replace(vehicle);
-  Future<List<Vehicle>> getVehiclesForCustomer(int customerId) =>
-      (select(vehicles)..where((v) => v.customerId.equals(customerId))).get();
-  Future<int> deleteVehicle(Vehicle vehicle) => delete(vehicles).delete(vehicle);
-
-  // --- ADDED: Method to check for existing registration number ---
-  Future<Vehicle?> getVehicleByRegNo(String regNo) => 
-      (select(vehicles)..where((v) => v.registrationNumber.equals(regNo))).getSingleOrNull();
+@DataClassName('Vehicle')
+class Vehicles extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get customerId =>
+      integer().references(Customers, #id, onDelete: KeyAction.cascade)();
+  TextColumn get registrationNumber =>
+      text().withLength(min: 1, max: 20).unique()();
+  TextColumn get make => text().nullable().withLength(max: 50)();
+  TextColumn get model => text().nullable().withLength(max: 50)();
+  IntColumn get year => integer().nullable()();
+  IntColumn get currentMileage => integer().nullable()();
+  DateTimeColumn get lastGeneralServiceDate => dateTime().nullable()();
+  DateTimeColumn get lastEngineOilChangeDate => dateTime().nullable()();
+  DateTimeColumn get lastGearOilChangeDate => dateTime().nullable()();
+  IntColumn get lastGeneralServiceMileage => integer().nullable()();
+  IntColumn get lastEngineOilChangeMileage => integer().nullable()();
+  IntColumn get lastGearOilChangeMileage => integer().nullable()();
+  DateTimeColumn get nextReminderDate => dateTime().nullable()();
+  TextColumn get nextReminderType => text().nullable()();
+  BoolColumn get isReminderActive =>
+      boolean().withDefault(const Constant(true))();
+  DateTimeColumn get reminderSnoozedUntil => dateTime().nullable()();
 }
 
 @DataClassName('User')
@@ -52,7 +80,8 @@ class Users extends Table {
 class InventoryItems extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get name => text().withLength(min: 2, max: 100)();
-  TextColumn get partNumber => text().nullable().unique().withLength(min: 1, max: 50)();
+  TextColumn get partNumber =>
+      text().nullable().unique().withLength(min: 1, max: 50)();
   TextColumn get supplier => text().nullable().withLength(max: 100)();
   RealColumn get costPrice => real()();
   RealColumn get salePrice => real()();
@@ -69,34 +98,17 @@ class Customers extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get name => text().withLength(min: 2, max: 100)();
   TextColumn get phoneNumber => text().unique().withLength(min: 11, max: 14)();
-  TextColumn get whatsappNumber => text().nullable().withLength(min: 11, max: 14)();
+  TextColumn get whatsappNumber =>
+      text().nullable().withLength(min: 11, max: 14)();
   TextColumn get email => text().nullable().withLength(max: 100)();
   TextColumn get address => text().nullable().withLength(max: 200)();
-}
-
-@DataClassName('Vehicle')
-class Vehicles extends Table {
-  IntColumn get id => integer().autoIncrement()();
-  IntColumn get customerId => integer().references(Customers, #id, onDelete: KeyAction.cascade)();
-  TextColumn get registrationNumber => text().withLength(min: 1, max: 20).unique()();
-  TextColumn get make => text().nullable().withLength(max: 50)();
-  TextColumn get model => text().nullable().withLength(max: 50)();
-  IntColumn get year => integer().nullable()();
-  IntColumn get currentMileage => integer().nullable()();
-  DateTimeColumn get lastGeneralServiceDate => dateTime().nullable()();
-  DateTimeColumn get lastEngineOilChangeDate => dateTime().nullable()();
-  DateTimeColumn get lastGearOilChangeDate => dateTime().nullable()();
-  IntColumn get lastGeneralServiceMileage => integer().nullable()();
-  IntColumn get lastEngineOilChangeMileage => integer().nullable()();
-  IntColumn get lastGearOilChangeMileage => integer().nullable()();
-  DateTimeColumn get nextReminderDate => dateTime().nullable()();
-  TextColumn get nextReminderType => text().nullable()();
 }
 
 @DataClassName('Order')
 class Orders extends Table {
   IntColumn get id => integer().autoIncrement()();
-  IntColumn get customerId => integer().references(Customers, #id, onDelete: KeyAction.restrict)();
+  IntColumn get customerId =>
+      integer().references(Customers, #id, onDelete: KeyAction.restrict)();
   DateTimeColumn get orderDate => dateTime()();
   RealColumn get totalAmount => real().withDefault(const Constant(0.0))();
   TextColumn get status => text().withDefault(const Constant('Pending'))();
@@ -105,8 +117,10 @@ class Orders extends Table {
 @DataClassName('OrderItem')
 class OrderItems extends Table {
   IntColumn get id => integer().autoIncrement()();
-  IntColumn get orderId => integer().references(Orders, #id, onDelete: KeyAction.cascade)();
-  IntColumn get itemId => integer().references(InventoryItems, #id, onDelete: KeyAction.restrict)();
+  IntColumn get orderId =>
+      integer().references(Orders, #id, onDelete: KeyAction.cascade)();
+  IntColumn get itemId =>
+      integer().references(InventoryItems, #id, onDelete: KeyAction.restrict)();
   IntColumn get quantity => integer()();
   RealColumn get priceAtSale => real()();
 }
@@ -130,21 +144,82 @@ class VehicleModels extends Table {
   Set<Column> get primaryKey => {make, model};
 }
 
-@DriftDatabase(tables: [Users, InventoryItems, Customers, Vehicles, Orders, OrderItems, Services, VehicleModels, ServiceHistories], daos: [VehicleDao, ServiceHistoryDao])
+@DriftAccessor(tables: [ServiceHistories])
+class ServiceHistoryDao extends DatabaseAccessor<AppDatabase>
+    with _$ServiceHistoryDaoMixin {
+  ServiceHistoryDao(AppDatabase db) : super(db);
+  Future<void> addServiceHistory(ServiceHistoriesCompanion entry) =>
+      into(serviceHistories).insert(entry);
+  Future<List<ServiceHistory>> getHistoryForVehicle(int vehicleId) =>
+      (select(serviceHistories)
+            ..where((tbl) => tbl.vehicleId.equals(vehicleId))
+            ..orderBy([(t) => OrderingTerm(expression: t.serviceDate)]))
+          .get();
+}
+
+@DriftAccessor(tables: [Vehicles])
+class VehicleDao extends DatabaseAccessor<AppDatabase> with _$VehicleDaoMixin {
+  VehicleDao(AppDatabase db) : super(db);
+  Future<List<Vehicle>> getAllVehicles() => select(vehicles).get();
+  Future<Vehicle?> getVehicleById(int id) =>
+      (select(vehicles)..where((v) => v.id.equals(id))).getSingleOrNull();
+  Future<void> insertVehicle(VehiclesCompanion vehicle) =>
+      into(vehicles).insert(vehicle);
+  Future<bool> updateVehicle(Vehicle vehicle) =>
+      update(vehicles).replace(vehicle);
+  Future<List<Vehicle>> getVehiclesForCustomer(int customerId) =>
+      (select(vehicles)..where((v) => v.customerId.equals(customerId))).get();
+  Future<int> deleteVehicle(Vehicle vehicle) =>
+      delete(vehicles).delete(vehicle);
+  Future<Vehicle?> getVehicleByRegNo(String regNo) => (select(
+    vehicles,
+  )..where((v) => v.registrationNumber.equals(regNo))).getSingleOrNull();
+}
+
+@DriftDatabase(
+  tables: [
+    Users,
+    InventoryItems,
+    Customers,
+    Vehicles,
+    Orders,
+    OrderItems,
+    Services,
+    VehicleModels,
+    ServiceHistories,
+    MessageTemplates,
+    ShopSettings,
+  ],
+  daos: [VehicleDao, ServiceHistoryDao],
+)
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
-    onCreate: (Migrator m) {
-      return m.createAll();
+    onCreate: (Migrator m) async {
+      await m.createAll();
     },
     onUpgrade: (Migrator m, int from, int to) async {
-      if (from < 8) {
-        await m.createTable(serviceHistories);
+      if (from < 9) {
+        await m.createTable(messageTemplates);
+        await m.addColumn(vehicles, vehicles.isReminderActive);
+        await m.addColumn(vehicles, vehicles.reminderSnoozedUntil);
+      }
+      if (from < 10) {
+        await m.createTable(shopSettings);
+      }
+    },
+    // --- FIX: Use the correct `beforeOpen` callback to seed data ---
+    beforeOpen: (details) async {
+      // This runs after migrations, but before the database is ready for use.
+      if (details.wasCreated) {
+        // If the database was just created, seed it with a default settings row.
+        // We can access the `into` method from `this` AppDatabase instance.
+        await into(shopSettings).insert(const ShopSettingsCompanion());
       }
     },
   );

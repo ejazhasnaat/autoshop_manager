@@ -2,12 +2,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:autoshop_manager/core/constants/app_constants.dart'; // For appName
-import 'package:autoshop_manager/features/auth/presentation/auth_providers.dart'; // For authNotifierProvider
+import 'package:autoshop_manager/core/constants/app_constants.dart';
+import 'package:autoshop_manager/features/auth/presentation/auth_providers.dart';
 
 class CommonAppBar extends ConsumerWidget implements PreferredSizeWidget {
   final String? title;
   final bool showBackButton;
+  final bool showCloseButton;
   final List<Widget>? customActions;
   final PreferredSizeWidget? bottom;
 
@@ -15,6 +16,7 @@ class CommonAppBar extends ConsumerWidget implements PreferredSizeWidget {
     super.key,
     this.title,
     this.showBackButton = false,
+    this.showCloseButton = false,
     this.customActions,
     this.bottom,
   });
@@ -55,6 +57,10 @@ class CommonAppBar extends ConsumerWidget implements PreferredSizeWidget {
             context.go('/settings');
           } else if (result == 'manage_users') {
             context.go('/signup');
+          } 
+          else if (result == 'reminder_intervals') {
+            // --- FIX: Changed context.go to context.push to preserve the navigation stack ---
+            context.push('/reminders/intervals');
           }
         },
         itemBuilder: (BuildContext context) {
@@ -63,7 +69,6 @@ class CommonAppBar extends ConsumerWidget implements PreferredSizeWidget {
             const PopupMenuItem<String>(value: 'settings', child: Text('Settings')),
           ];
 
-          // Conditionally add the 'Manage Users' option if the user is an admin
           if (authState.isAdmin) {
             menuItems.add(
               const PopupMenuItem<String>(
@@ -71,9 +76,14 @@ class CommonAppBar extends ConsumerWidget implements PreferredSizeWidget {
                 child: Text('Manage Users'),
               ),
             );
+            menuItems.add(
+              const PopupMenuItem<String>(
+                value: 'reminder_intervals',
+                child: Text('Reminder Intervals'),
+              ),
+            );
           }
 
-          // Add the divider and logout option at the end
           menuItems.addAll([
             const PopupMenuDivider(),
             const PopupMenuItem<String>(value: 'logout', child: Text('Logout')),
@@ -107,23 +117,31 @@ class CommonAppBar extends ConsumerWidget implements PreferredSizeWidget {
       scrolledUnderElevation: 8,
       automaticallyImplyLeading: false,
 
-      leading: showBackButton
+      leading: showCloseButton
           ? IconButton(
-              icon: const Icon(Icons.arrow_back),
-              onPressed: () {
-                if (context.canPop()) {
-                  context.pop();
-                } else {
-                  context.go('/home');
-                }
-              },
+              icon: const Icon(Icons.close),
+              tooltip: 'Close',
+              onPressed: () => context.pop(),
             )
-          : IconButton(
-              icon: const Icon(Icons.home),
-              onPressed: () {
-                context.go('/home');
-              },
-            ),
+          : showBackButton
+              ? IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  tooltip: 'Back',
+                  onPressed: () {
+                    if (context.canPop()) {
+                      context.pop();
+                    } else {
+                      context.go('/home');
+                    }
+                  },
+                )
+              : IconButton(
+                  icon: const Icon(Icons.home),
+                  tooltip: 'Home',
+                  onPressed: () {
+                    context.go('/home');
+                  },
+                ),
       actions: combinedActions,
       bottom: bottom,
     );

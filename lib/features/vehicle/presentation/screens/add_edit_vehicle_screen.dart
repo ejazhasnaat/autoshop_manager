@@ -14,12 +14,12 @@ import 'package:autoshop_manager/features/customer/presentation/screens/add_edit
 
 class AddEditVehicleScreen extends ConsumerStatefulWidget {
   final int? vehicleId;
-  final int? customerId; // Can now be null in draft mode
-  final bool isDraftMode; // --- ADDED: Flag for draft mode ---
+  final int? customerId;
+  final bool isDraftMode;
 
   const AddEditVehicleScreen({
-    super.key, 
-    this.vehicleId, 
+    super.key,
+    this.vehicleId,
     this.customerId,
     this.isDraftMode = false,
   });
@@ -33,12 +33,15 @@ class _AddEditVehicleScreenState extends ConsumerState<AddEditVehicleScreen> {
   final _formKey = GlobalKey<FormState>();
   bool get _isEditing => widget.vehicleId != null;
 
+  // --- FIX: Added state variable to hold the loaded vehicle data ---
+  Vehicle? _loadedVehicle;
+
   late final TextEditingController _regController;
   late final TextEditingController _mileageController;
   late final TextEditingController _lastServiceMileageController;
   late final TextEditingController _engineOilMileageController;
   late final TextEditingController _gearOilMileageController;
-  
+
   String? _selectedMake;
   String? _selectedModel;
   int? _selectedYear;
@@ -60,10 +63,12 @@ class _AddEditVehicleScreenState extends ConsumerState<AddEditVehicleScreen> {
       _loadVehicleData();
     }
   }
-  
+
   Future<void> _loadVehicleData() async {
     final vehicle = await ref.read(vehicleByIdProvider(widget.vehicleId!).future);
     if (vehicle != null && mounted) {
+      // --- FIX: Store the loaded vehicle to preserve all its data ---
+      _loadedVehicle = vehicle;
       setState(() {
         _regController.text = vehicle.registrationNumber;
         _selectedMake = vehicle.make;
@@ -106,8 +111,6 @@ class _AddEditVehicleScreenState extends ConsumerState<AddEditVehicleScreen> {
 
   Future<void> _saveVehicle() async {
     if (_formKey.currentState!.validate()) {
-      
-      // --- FIXED: Added validation check before saving ---
       final vehicleDao = ref.read(vehicleDaoProvider);
       final existingVehicle = await vehicleDao.getVehicleByRegNo(_regController.text);
 
@@ -120,9 +123,11 @@ class _AddEditVehicleScreenState extends ConsumerState<AddEditVehicleScreen> {
         return;
       }
       
+      // --- FIX: Preserve existing reminder data when editing ---
+      // This now correctly includes the new required fields.
       final vehicleData = Vehicle(
         id: widget.vehicleId ?? DateTime.now().microsecondsSinceEpoch * -1,
-        customerId: widget.customerId ?? 0, // customerId will be ignored by caller in draft mode
+        customerId: widget.customerId ?? 0,
         registrationNumber: _regController.text,
         make: _selectedMake,
         model: _selectedModel,
@@ -134,6 +139,11 @@ class _AddEditVehicleScreenState extends ConsumerState<AddEditVehicleScreen> {
         lastGeneralServiceDate: _lastServiceDate,
         lastEngineOilChangeDate: _engineOilDate,
         lastGearOilChangeDate: _gearOilDate,
+        // --- ADDED: Include new fields to fix compile error and prevent data loss ---
+        isReminderActive: _isEditing ? _loadedVehicle!.isReminderActive : true,
+        reminderSnoozedUntil: _isEditing ? _loadedVehicle!.reminderSnoozedUntil : null,
+        nextReminderDate: _isEditing ? _loadedVehicle!.nextReminderDate : null,
+        nextReminderType: _isEditing ? _loadedVehicle!.nextReminderType : null,
       );
 
       if (widget.isDraftMode) {

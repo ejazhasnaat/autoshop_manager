@@ -64,37 +64,44 @@ class HomeScreen extends ConsumerWidget {
                   _buildFeatureButton(
                     context,
                     label: 'Customers',
-                    icon: Icons.people,
+                    icon: Icons.people_outline,
                     onPressed: () => context.go('/customers'),
                   ),
                   _buildFeatureButton(
                     context,
                     label: 'Inventory',
-                    icon: Icons.inventory,
+                    icon: Icons.inventory_2_outlined,
                     onPressed: () => context.go('/inventory'),
                   ),
                   _buildFeatureButton(
                     context,
                     label: 'Orders',
-                    icon: Icons.receipt_long,
+                    icon: Icons.receipt_long_outlined,
                     onPressed: () => context.go('/orders'),
+                  ),
+                  // --- NEW "Reminders" BUTTON ---
+                  _buildFeatureButton(
+                    context,
+                    label: 'Reminders',
+                    icon: Icons.notifications_active_outlined,
+                    onPressed: () => context.go('/reminders'),
                   ),
                   _buildFeatureButton(
                     context,
                     label: 'Services',
-                    icon: Icons.design_services,
+                    icon: Icons.design_services_outlined,
                     onPressed: () => context.go('/services'),
                   ),
                   _buildFeatureButton(
                     context,
                     label: 'Vehicle Models',
-                    icon: Icons.directions_car,
+                    icon: Icons.directions_car_outlined,
                     onPressed: () => context.go('/vehicle_models'),
                   ),
                   _buildFeatureButton(
                     context,
                     label: 'Reports',
-                    icon: Icons.bar_chart,
+                    icon: Icons.bar_chart_outlined,
                     onPressed: () => context.go('/reports'),
                   ),
                 ],
@@ -138,8 +145,8 @@ class HomeScreen extends ConsumerWidget {
 
   Widget _buildFeatureButton(BuildContext context, {required String label, required IconData icon, required VoidCallback onPressed}) {
     return SizedBox(
-      width: 150, // Fixed width for buttons
-      height: 120, // Fixed height for buttons
+      width: 150,
+      height: 120,
       child: Card(
         elevation: 4,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
