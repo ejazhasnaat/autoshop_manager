@@ -1,8 +1,8 @@
 // lib/widgets/common_app_bar.dart
+import 'package:autoshop_manager/features/settings/presentation/workshop_settings_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:autoshop_manager/core/constants/app_constants.dart';
 import 'package:autoshop_manager/features/auth/presentation/auth_providers.dart';
 
 class CommonAppBar extends ConsumerWidget implements PreferredSizeWidget {
@@ -24,129 +24,135 @@ class CommonAppBar extends ConsumerWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authNotifierProvider);
-    final currentUserName = authState.user?.username ?? 'Guest';
+    final shopSettingsAsync = ref.watch(workshopSettingsProvider);
+    final theme = Theme.of(context);
 
-    final List<Widget> defaultActions = [
-      Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8.0),
-          child: Text(
-            currentUserName,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-          ),
-        ),
-      ),
-      PopupMenuButton<String>(
-        icon: const Icon(Icons.settings),
-        tooltip: 'Settings Menu',
-        onSelected: (String result) async {
-          if (result == 'logout') {
-            await ref.read(authNotifierProvider.notifier).logout();
-            context.go('/login');
-          } else if (result == 'about') {
-            showAboutDialog(
-              context: context,
-              applicationName: AppConstants.appName,
-              applicationVersion: '1.0.0',
-              applicationLegalese: '© 2023 Autoshop Manager. All rights reserved.',
-            );
-          } else if (result == 'settings') {
-            context.go('/settings');
-          } else if (result == 'manage_users') {
-            context.go('/signup');
-          } 
-          else if (result == 'reminder_intervals') {
-            // --- FIX: Changed context.go to context.push to preserve the navigation stack ---
-            context.push('/reminders/intervals');
+    Widget leadingButton;
+    if (showCloseButton) {
+      leadingButton = IconButton(
+        icon: const Icon(Icons.close),
+        tooltip: 'Close',
+        onPressed: () => context.pop(),
+      );
+    } else if (showBackButton) {
+      leadingButton = IconButton(
+        icon: const Icon(Icons.arrow_back),
+        tooltip: 'Back',
+        onPressed: () {
+          if (context.canPop()) {
+            context.pop();
+          } else {
+            context.go('/home');
           }
         },
-        itemBuilder: (BuildContext context) {
-          final List<PopupMenuEntry<String>> menuItems = [
-            const PopupMenuItem<String>(value: 'about', child: Text('About')),
-            const PopupMenuItem<String>(value: 'settings', child: Text('Settings')),
-          ];
-
-          if (authState.isAdmin) {
-            menuItems.add(
-              const PopupMenuItem<String>(
-                value: 'manage_users',
-                child: Text('Manage Users'),
-              ),
-            );
-            menuItems.add(
-              const PopupMenuItem<String>(
-                value: 'reminder_intervals',
-                child: Text('Reminder Intervals'),
-              ),
-            );
-          }
-
-          menuItems.addAll([
-            const PopupMenuDivider(),
-            const PopupMenuItem<String>(value: 'logout', child: Text('Logout')),
-          ]);
-
-          return menuItems;
-        },
-      ),
-      const SizedBox(width: 8.0),
-    ];
-
-    List<Widget> combinedActions = [];
-    if (customActions != null) {
-      combinedActions.addAll(customActions!);
+      );
+    } else {
+      leadingButton = IconButton(
+        icon: const Icon(Icons.home_outlined),
+        tooltip: 'Home',
+        onPressed: () => context.go('/home'),
+      );
     }
-    combinedActions.addAll(defaultActions);
 
     return AppBar(
-      title: Text(
-        title ?? AppConstants.appName,
-        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-          fontWeight: FontWeight.bold,
-          color: Theme.of(context).colorScheme.onSurface,
-        ),
-      ),
-      centerTitle: false,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      foregroundColor: Theme.of(context).colorScheme.onSurface,
-      elevation: 4,
-      shadowColor: Theme.of(context).colorScheme.shadow.withOpacity(0.2),
-      scrolledUnderElevation: 8,
+      backgroundColor: theme.colorScheme.surface,
+      foregroundColor: theme.colorScheme.onSurface,
+      elevation: 1,
+      shadowColor: theme.colorScheme.shadow.withOpacity(0.1),
       automaticallyImplyLeading: false,
-
-      leading: showCloseButton
-          ? IconButton(
-              icon: const Icon(Icons.close),
-              tooltip: 'Close',
-              onPressed: () => context.pop(),
-            )
-          : showBackButton
-              ? IconButton(
-                  icon: const Icon(Icons.arrow_back),
-                  tooltip: 'Back',
-                  onPressed: () {
-                    if (context.canPop()) {
-                      context.pop();
-                    } else {
-                      context.go('/home');
-                    }
-                  },
-                )
-              : IconButton(
-                  icon: const Icon(Icons.home),
-                  tooltip: 'Home',
-                  onPressed: () {
-                    context.go('/home');
-                  },
+      titleSpacing: 0,
+      title: Row(
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(width: 4),
+              leadingButton,
+              if (title != null) ...[
+                const SizedBox(width: 8),
+                Text(
+                  title!,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.normal
+                  ),
                 ),
-      actions: combinedActions,
+              ],
+            ],
+          ),
+          Expanded(
+            child: Center(
+              child: shopSettingsAsync.when(
+                data: (settings) => Text(
+                  settings.workshopName,
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                loading: () => const SizedBox.shrink(),
+                error: (e, s) => const SizedBox.shrink(),
+              ),
+            ),
+          ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (customActions != null) ...customActions!,
+              PopupMenuButton<String>(
+                tooltip: 'Settings Menu',
+                onSelected: (String result) async {
+                  if (result == 'logout') {
+                    await ref.read(authNotifierProvider.notifier).logout();
+                    if (context.mounted) context.go('/login');
+                  } else if (result == 'workshop_settings') {
+                    context.push('/settings/workshop');
+                  } else if (result == 'manage_users') {
+                    context.go('/signup');
+                  } else if (result == 'reminder_intervals') {
+                    context.push('/reminders/intervals');
+                  } else if (result == 'settings') { // UPDATE: Navigation for new settings screen
+                    context.push('/settings');
+                  }
+                },
+                itemBuilder: (BuildContext context) {
+                  final List<PopupMenuEntry<String>> menuItems = [];
+                  if (authState.isAdmin) {
+                    menuItems.addAll([
+                      const PopupMenuItem<String>(value: 'workshop_settings', child: Text('Workshop Settings')),
+                      // UPDATE: Link to the new general settings screen
+                      const PopupMenuItem<String>(value: 'settings', child: Text('App Settings')),
+                      const PopupMenuItem<String>(value: 'manage_users', child: Text('Manage Users')),
+                      const PopupMenuItem<String>(value: 'reminder_intervals', child: Text('Reminder Intervals')),
+                    ]);
+                  }
+                  menuItems.addAll([
+                    if(authState.isAdmin) const PopupMenuDivider(),
+                    const PopupMenuItem<String>(value: 'logout', child: Text('Logout')),
+                  ]);
+                  return menuItems;
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                  child: Row(
+                    children: [
+                      Text(
+                        authState.user?.fullName ?? 'Guest',
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                      const SizedBox(width: 6),
+                      const Icon(Icons.settings_outlined),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
+            ],
+          ),
+        ],
+      ),
       bottom: bottom,
     );
   }
 
   @override
-  Size get preferredSize => Size.fromHeight(kToolbarHeight + (bottom?.preferredSize.height ?? 0.0));
+  Size get preferredSize =>
+      Size.fromHeight(kToolbarHeight + (bottom?.preferredSize.height ?? 0.0));
 }

@@ -1,15 +1,15 @@
 // lib/features/inventory/presentation/screens/add_edit_inventory_item_screen.dart
+import 'package:autoshop_manager/core/extensions/iterable_extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:autoshop_manager/data/database/app_database.dart'; // For InventoryItem type
+import 'package:autoshop_manager/data/database/app_database.dart'; 
 import 'package:autoshop_manager/features/inventory/presentation/inventory_providers.dart';
-import 'package:autoshop_manager/widgets/common_app_bar.dart'; // For CommonAppBar
-import 'package:drift/drift.dart' hide Column; // For Value
-import 'package:autoshop_manager/features/vehicle/presentation/vehicle_model_providers.dart'; // For vehicle models
-import 'package:autoshop_manager/features/customer/presentation/screens/add_edit_customer_screen.dart'; // For IterableExtension
-import 'package:autoshop_manager/data/repositories/inventory_repository.dart'; // For inventoryRepositoryProvider
-import 'package:autoshop_manager/features/settings/presentation/settings_providers.dart'; // <--- NEW IMPORT
+import 'package:autoshop_manager/widgets/common_app_bar.dart'; 
+import 'package:drift/drift.dart' hide Column;
+import 'package:autoshop_manager/features/vehicle/presentation/vehicle_model_providers.dart';
+import 'package:autoshop_manager/data/repositories/inventory_repository.dart';
+import 'package:autoshop_manager/features/settings/presentation/settings_providers.dart';
 
 class AddEditInventoryItemScreen extends ConsumerStatefulWidget {
   final int? itemId; // Null for add, has value for edit

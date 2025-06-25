@@ -33,12 +33,11 @@ class RemindersNotifier extends StateNotifier<AsyncValue<void>> {
 
   final Ref _ref;
 
-  // --- UPDATED: This method now calls the repository directly ---
   Future<bool> resetDefaultTemplates() async {
     state = const AsyncLoading();
     try {
       await _ref.read(reminderRepositoryProvider).seedTemplatesFromJson(forceReset: true);
-      _ref.invalidate(messageTemplatesProvider); // Refresh the UI
+      _ref.invalidate(messageTemplatesProvider);
       state = const AsyncData(null);
       return true;
     } catch (e) {

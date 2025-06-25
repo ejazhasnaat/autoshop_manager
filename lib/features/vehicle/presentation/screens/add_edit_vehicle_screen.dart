@@ -1,4 +1,5 @@
 // lib/features/vehicle/presentation/screens/add_edit_vehicle_screen.dart
+import 'package:autoshop_manager/core/extensions/iterable_extensions.dart';
 import 'package:autoshop_manager/data/database/app_database.dart';
 import 'package:autoshop_manager/features/customer/presentation/customer_providers.dart';
 import 'package:autoshop_manager/features/vehicle/presentation/vehicle_providers.dart';
@@ -9,8 +10,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:autoshop_manager/features/vehicle/presentation/vehicle_model_providers.dart';
-import 'package:autoshop_manager/features/customer/presentation/screens/add_edit_customer_screen.dart';
-
 
 class AddEditVehicleScreen extends ConsumerStatefulWidget {
   final int? vehicleId;
@@ -33,8 +32,9 @@ class _AddEditVehicleScreenState extends ConsumerState<AddEditVehicleScreen> {
   final _formKey = GlobalKey<FormState>();
   bool get _isEditing => widget.vehicleId != null;
 
-  // --- FIX: Added state variable to hold the loaded vehicle data ---
   Vehicle? _loadedVehicle;
+  // --- FIX: Added flag to prevent re-populating controllers ---
+  bool _controllersPopulated = false;
 
   late final TextEditingController _regController;
   late final TextEditingController _mileageController;
@@ -64,10 +64,40 @@ class _AddEditVehicleScreenState extends ConsumerState<AddEditVehicleScreen> {
     }
   }
 
+  // --- ADDED: Handle receiving a draft vehicle for editing ---
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (widget.isDraftMode && !_controllersPopulated) {
+      final draftVehicle = GoRouterState.of(context).extra as Vehicle?;
+      if (draftVehicle != null) {
+        _populateFromDraft(draftVehicle);
+      }
+    }
+  }
+
+  // --- ADDED: Method to populate form fields from a draft vehicle ---
+  void _populateFromDraft(Vehicle vehicle) {
+    _loadedVehicle = vehicle;
+    setState(() {
+      _regController.text = vehicle.registrationNumber;
+      _selectedMake = vehicle.make;
+      _selectedModel = vehicle.model;
+      _selectedYear = vehicle.year;
+      _mileageController.text = vehicle.currentMileage?.toString() ?? '';
+      _lastServiceMileageController.text = vehicle.lastGeneralServiceMileage?.toString() ?? '';
+      _engineOilMileageController.text = vehicle.lastEngineOilChangeMileage?.toString() ?? '';
+      _gearOilMileageController.text = vehicle.lastGearOilChangeMileage?.toString() ?? '';
+      _lastServiceDate = vehicle.lastGeneralServiceDate;
+      _engineOilDate = vehicle.lastEngineOilChangeDate;
+      _gearOilDate = vehicle.lastGearOilChangeDate;
+      _controllersPopulated = true;
+    });
+  }
+
   Future<void> _loadVehicleData() async {
     final vehicle = await ref.read(vehicleByIdProvider(widget.vehicleId!).future);
     if (vehicle != null && mounted) {
-      // --- FIX: Store the loaded vehicle to preserve all its data ---
       _loadedVehicle = vehicle;
       setState(() {
         _regController.text = vehicle.registrationNumber;
@@ -81,6 +111,7 @@ class _AddEditVehicleScreenState extends ConsumerState<AddEditVehicleScreen> {
         _lastServiceDate = vehicle.lastGeneralServiceDate;
         _engineOilDate = vehicle.lastEngineOilChangeDate;
         _gearOilDate = vehicle.lastGearOilChangeDate;
+        _controllersPopulated = true;
       });
     }
   }
@@ -123,10 +154,12 @@ class _AddEditVehicleScreenState extends ConsumerState<AddEditVehicleScreen> {
         return;
       }
       
-      // --- FIX: Preserve existing reminder data when editing ---
-      // This now correctly includes the new required fields.
+      // --- FIX: Check if we are editing a draft or a saved vehicle to preserve all data ---
+      final bool isEditingDraft = widget.isDraftMode && _loadedVehicle != null;
+      final bool isEditingSaved = _isEditing && _loadedVehicle != null;
+
       final vehicleData = Vehicle(
-        id: widget.vehicleId ?? DateTime.now().microsecondsSinceEpoch * -1,
+        id: widget.vehicleId ?? _loadedVehicle?.id ?? DateTime.now().microsecondsSinceEpoch * -1,
         customerId: widget.customerId ?? 0,
         registrationNumber: _regController.text,
         make: _selectedMake,
@@ -139,11 +172,10 @@ class _AddEditVehicleScreenState extends ConsumerState<AddEditVehicleScreen> {
         lastGeneralServiceDate: _lastServiceDate,
         lastEngineOilChangeDate: _engineOilDate,
         lastGearOilChangeDate: _gearOilDate,
-        // --- ADDED: Include new fields to fix compile error and prevent data loss ---
-        isReminderActive: _isEditing ? _loadedVehicle!.isReminderActive : true,
-        reminderSnoozedUntil: _isEditing ? _loadedVehicle!.reminderSnoozedUntil : null,
-        nextReminderDate: _isEditing ? _loadedVehicle!.nextReminderDate : null,
-        nextReminderType: _isEditing ? _loadedVehicle!.nextReminderType : null,
+        isReminderActive: (isEditingSaved || isEditingDraft) ? _loadedVehicle!.isReminderActive : true,
+        reminderSnoozedUntil: (isEditingSaved || isEditingDraft) ? _loadedVehicle!.reminderSnoozedUntil : null,
+        nextReminderDate: (isEditingSaved || isEditingDraft) ? _loadedVehicle!.nextReminderDate : null,
+        nextReminderType: (isEditingSaved || isEditingDraft) ? _loadedVehicle!.nextReminderType : null,
       );
 
       if (widget.isDraftMode) {
@@ -175,7 +207,8 @@ class _AddEditVehicleScreenState extends ConsumerState<AddEditVehicleScreen> {
 
     return Scaffold(
       appBar: CommonAppBar(
-        title: _isEditing ? 'Edit Vehicle' : 'Add Vehicle',
+        // --- FIX: Update title logic for editing drafts ---
+        title: _isEditing || _controllersPopulated ? 'Edit Vehicle' : 'Add Vehicle',
         showBackButton: true,
       ),
       body: SingleChildScrollView(
@@ -204,6 +237,10 @@ class _AddEditVehicleScreenState extends ConsumerState<AddEditVehicleScreen> {
                     for (int i = yearTo; i >= yearFrom; i--) {
                       years.add(i);
                     }
+                  } else if (_selectedYear != null && !years.contains(_selectedYear)) {
+                    // --- FIX: Keep selected year if models are re-filtering ---
+                    years.add(_selectedYear!);
+                    years.sort((a,b) => b.compareTo(a));
                   }
 
                   return Column(

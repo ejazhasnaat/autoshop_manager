@@ -1,91 +1,152 @@
-// lib/features/auth/presentation/auth_providers.dart
+import 'package:autoshop_manager/core/setup_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:autoshop_manager/data/repositories/auth_repository.dart'; // <--- NEW: Import AuthRepository
-import 'package:autoshop_manager/data/database/app_database.dart'; // For the User type (Drift generated)
-
-// AuthUser class (defines the authenticated user structure)
-class AuthUser {
-  final int id;
-  final String username;
-  final String role;
-
-  AuthUser({required this.id, required this.username, required this.role});
-}
-
-// AuthState class (defines the authentication state)
-enum AuthStatus { unknown, authenticated, unauthenticated }
+import 'package:autoshop_manager/data/repositories/auth_repository.dart';
+import 'package:autoshop_manager/data/repositories/preference_repository.dart';
+import 'package:autoshop_manager/data/database/app_database.dart';
+import 'package:autoshop_manager/services/secure_storage_service.dart';
 
 class AuthState {
-  final AuthStatus status;
-  final AuthUser? user;
+  final User? user;
+  final bool isLoading;
+  final String? error;
 
-  AuthState({this.status = AuthStatus.unknown, this.user});
+  const AuthState({this.user, this.isLoading = false, this.error});
 
-  bool get isAuthenticated => status == AuthStatus.authenticated;
-  bool get isAdmin => isAuthenticated && user?.role == 'Admin';
+  bool get isAuthenticated => user != null;
+  bool get isAdmin => user?.role == 'Admin';
 
-  AuthState copyWith({AuthStatus? status, AuthUser? user}) {
+  AuthState copyWith({
+    User? user,
+    bool? isLoading,
+    String? error,
+    bool clearUser = false,
+  }) {
     return AuthState(
-      status: status ?? this.status,
-      user: user ?? this.user,
+      user: clearUser ? null : user ?? this.user,
+      isLoading: isLoading ?? this.isLoading,
+      error: error ?? this.error,
     );
   }
 }
 
-// AuthNotifierProvider
-final authNotifierProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
-  // Pass ref into the notifier so it can invalidate other providers
-  return AuthNotifier(ref.read(authRepositoryProvider), ref);
+final allUsersProvider = StreamProvider.autoDispose<List<User>>((ref) {
+  final authRepository = ref.watch(authRepositoryProvider);
+  return authRepository.getAllUsers();
 });
 
-// Provider to get all users for management (e.g., in signup screen)
-final allUsersProvider = FutureProvider<List<User>>((ref) async {
-  return ref.read(authRepositoryProvider).getAllUsers();
+final authNotifierProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
+  return AuthNotifier(ref);
 });
 
 class AuthNotifier extends StateNotifier<AuthState> {
-  final AuthRepository _authRepository;
-  final Ref _ref; // Store the Ref for invalidation
+  final Ref _ref;
 
-  AuthNotifier(this._authRepository, this._ref) : super(AuthState()) {
-    _initializeAuth();
+  AuthNotifier(this._ref) : super(const AuthState());
+
+  Future<void> tryAutoLogin() async {
+    final shouldKeepLoggedIn = await _ref.read(preferenceRepositoryProvider).getKeepMeLoggedIn();
+    if (!shouldKeepLoggedIn) return;
+
+    final username = await _ref.read(secureStorageServiceProvider).readUsername();
+    final password = await _ref.read(secureStorageServiceProvider).readPassword();
+
+    if (username != null && password != null) {
+      await login(username, password);
+    }
   }
 
-  // Initialize Auth: Ensure admin user exists and seed initial data
-  Future<void> _initializeAuth() async {
-    await _authRepository.initializeAdminUser();
-    state = state.copyWith(status: AuthStatus.unauthenticated);
+  Future<bool> performInitialSetup({
+    required String workshopName,
+    required String managerName,
+    required String phone,
+    required String address,
+    required String adminUsername,
+    required String adminPassword,
+    required String adminFullName,
+    String? userUsername,
+    String? userPassword,
+    String? userFullName,
+    String? userRole,
+  }) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      await _ref.read(authRepositoryProvider).performInitialSetup(
+            workshopName: workshopName,
+            managerName: managerName,
+            phone: phone,
+            address: address,
+            adminUsername: adminUsername,
+            adminPassword: adminPassword,
+            adminFullName: adminFullName,
+            userUsername: userUsername,
+            userPassword: userPassword,
+            userFullName: userFullName,
+            userRole: userRole,
+          );
+
+      await _ref.read(preferenceRepositoryProvider).markSetupAsComplete();
+      _ref.read(setupCompleteProvider.notifier).state = true;
+      state = state.copyWith(isLoading: false);
+      return true;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      return false;
+    }
   }
 
   Future<bool> login(String username, String password) async {
-    final user = await _authRepository.login(username, password);
-    if (user != null) {
-      state = state.copyWith(status: AuthStatus.authenticated, user: user);
-      return true;
-    } else {
-      state = state.copyWith(status: AuthStatus.unauthenticated, user: null);
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      final user = await _ref.read(authRepositoryProvider).login(username, password);
+      if (user != null) {
+        state = state.copyWith(user: user, isLoading: false);
+        await _ref.read(secureStorageServiceProvider).saveCredentials(username, password);
+        return true;
+      } else {
+        state = state.copyWith(isLoading: false, error: 'Invalid credentials');
+        return false;
+      }
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
       return false;
     }
   }
 
   Future<void> logout() async {
-    state = state.copyWith(status: AuthStatus.unauthenticated, user: null);
+    state = state.copyWith(clearUser: true);
+    await _ref.read(secureStorageServiceProvider).deleteCredentials();
+    await _ref.read(preferenceRepositoryProvider).saveKeepMeLoggedIn(false);
   }
 
-  Future<AuthUser?> createUser(String username, String password, {required String role}) async {
-    final newUser = await _authRepository.signup(username, password, role);
-    if (newUser != null) {
-      _ref.invalidate(allUsersProvider); // Invalidate using the stored Ref
+  Future<User?> signup(String username, String password, String role, {String? fullName}) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      final userExists = await _ref.read(authRepositoryProvider).userExists(username);
+      if (userExists) {
+        state = state.copyWith(isLoading: false, error: 'Username already exists.');
+        return null;
+      }
+
+      final newUser = await _ref.read(authRepositoryProvider).signup(username, password, role, fullName: fullName);
+      _ref.invalidate(allUsersProvider);
+      state = state.copyWith(isLoading: false);
+      return newUser;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      return null;
     }
-    return newUser;
   }
 
   Future<bool> deleteUser(int userId) async {
-    final success = await _authRepository.deleteUser(userId);
-    if (success) {
-      _ref.invalidate(allUsersProvider); // Invalidate using the stored Ref
+    state = state.copyWith(isLoading: true);
+    try {
+      final success = await _ref.read(authRepositoryProvider).deleteUser(userId);
+      _ref.invalidate(allUsersProvider);
+      state = state.copyWith(isLoading: false);
+      return success;
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      return false;
     }
-    return success;
   }
 }
-

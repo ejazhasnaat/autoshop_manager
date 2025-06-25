@@ -5,34 +5,11 @@ import 'package:go_router/go_router.dart';
 import 'package:autoshop_manager/data/database/app_database.dart';
 import 'package:autoshop_manager/features/customer/presentation/customer_providers.dart';
 import 'package:autoshop_manager/widgets/common_app_bar.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class CustomerDetailScreen extends ConsumerWidget {
   final int customerId;
 
   const CustomerDetailScreen({super.key, required this.customerId});
-
-  void _sendMessage(BuildContext context, String phoneNumber, String type, WidgetRef ref) async {
-    final String sanitizedPhone = phoneNumber.replaceAll(RegExp(r'[^0-9]'), '');
-    final Uri url;
-
-    if (type == 'sms') {
-      url = Uri.parse('sms:$sanitizedPhone');
-    } else {
-      final customer = ref.read(customerByIdProvider(customerId)).value?.customer;
-      final whatsappNumber = customer?.whatsappNumber ?? sanitizedPhone;
-      url = Uri.parse('https://wa.me/$whatsappNumber');
-    }
-
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not launch $type. Is the app installed?')),
-      );
-    }
-  }
-
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -48,6 +25,7 @@ class CustomerDetailScreen extends ConsumerWidget {
               if (customerWithVehicles != null) {
                 return IconButton(
                   icon: const Icon(Icons.edit),
+                  tooltip: 'Edit Customer',
                   onPressed: () {
                     context.go('/customers/edit/${customerWithVehicles.customer.id}');
                   },
@@ -55,7 +33,7 @@ class CustomerDetailScreen extends ConsumerWidget {
               }
               return const SizedBox.shrink();
             },
-            loading: () => const Center(child: CircularProgressIndicator.adaptive()),
+            loading: () => const SizedBox.shrink(),
             error: (err, stack) => const SizedBox.shrink(),
           ),
         ],
@@ -89,7 +67,7 @@ class CustomerDetailScreen extends ConsumerWidget {
                         ),
                         const Divider(height: 24),
                         _buildDetailRow(context, 'Name:', customer.name),
-                        _buildPhoneRow(context, 'Phone Number:', customer.phoneNumber, ref),
+                        _buildDetailRow(context, 'Phone Number:', customer.phoneNumber),
                         if (customer.whatsappNumber != null && customer.whatsappNumber!.isNotEmpty)
                           _buildDetailRow(context, 'WhatsApp Number:', customer.whatsappNumber!),
                         if (customer.email != null && customer.email!.isNotEmpty)
@@ -179,42 +157,6 @@ class CustomerDetailScreen extends ConsumerWidget {
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(child: Text('Error: $err')),
-      ),
-    );
-  }
-
-  Widget _buildPhoneRow(BuildContext context, String label, String value, WidgetRef ref) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          SizedBox(
-            width: 150,
-            child: Text(
-              label,
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: Theme.of(context).textTheme.bodyLarge,
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.sms_rounded, color: Colors.orangeAccent),
-            onPressed: () => _sendMessage(context, value, 'sms', ref),
-            tooltip: 'Send SMS',
-            visualDensity: VisualDensity.compact,
-          ),
-          IconButton(
-            icon: const Icon(Icons.chat_rounded, color: Colors.green),
-            onPressed: () => _sendMessage(context, value, 'whatsapp', ref),
-            tooltip: 'Send WhatsApp',
-            visualDensity: VisualDensity.compact,
-          ),
-        ],
       ),
     );
   }

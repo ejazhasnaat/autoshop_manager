@@ -2,8 +2,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' hide Column;
 import 'package:autoshop_manager/data/database/app_database.dart';
-// CORRECTED: The conflicting import for auth_repository has been removed.
-// We now only import from the central providers file.
 import 'package:autoshop_manager/core/providers.dart'; 
 import 'package:autoshop_manager/data/repositories/vehicle_repository.dart';
 
@@ -58,9 +56,6 @@ class CustomerRepository {
     });
   }
 
-  // FIX: Replaced the complex and faulty method with a simple, direct update.
-  // The responsibility for managing vehicles is correctly handled by VehicleRepository
-  // and its associated screens, not within the customer update transaction.
   Future<bool> updateCustomer(Customer customer) async {
     return _db.transaction(() async {
       final success = await _db.update(_db.customers).replace(customer);
@@ -71,5 +66,12 @@ class CustomerRepository {
   Future<bool> deleteCustomer(int id) async {
     final count = await (_db.delete(_db.customers)..where((c) => c.id.equals(id))).go();
     return count > 0;
+  }
+
+  // NEW METHOD: Added to fix the compilation error.
+  // This delegates the vehicle deletion task to the VehicleRepository.
+  Future<bool> deleteVehicle(int vehicleId) async {
+    // The actual deletion logic belongs in the VehicleRepository.
+    return _vehicleRepo.deleteVehicle(vehicleId);
   }
 }

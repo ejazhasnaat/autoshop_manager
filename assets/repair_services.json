@@ -1,0 +1,199 @@
+{
+  "services": [
+    {
+      "category": "Routine Maintenance Services",
+      "items": [
+        {
+          "name": "Engine Oil & Filter Replacement",
+          "price": 4500.00,
+          "description": "Draining old engine oil and replacing it with new, high-quality oil, plus a new oil filter. Essential for engine longevity."
+        },
+        {
+          "name": "Air Filter Replacement",
+          "price": 1500.00,
+          "description": "Replacement of the engine air filter to ensure optimal engine performance and fuel efficiency."
+        },
+        {
+          "name": "Cabin Filter Replacement",
+          "price": 1800.00,
+          "description": "Replacement of the cabin air filter to improve air quality inside the vehicle for passengers."
+        },
+        {
+          "name": "Coolant/Antifreeze Flush & Refill",
+          "price": 3000.00,
+          "description": "Complete flush and refill of the cooling system with new coolant/antifreeze to prevent overheating."
+        },
+        {
+          "name": "Transmission Fluid Change",
+          "price": 6000.00,
+          "description": "Draining and replacing the transmission fluid to ensure smooth gear shifts and prolong transmission life."
+        },
+        {
+          "name": "Brake Fluid Replacement",
+          "price": 2500.00,
+          "description": "Flushing the old brake fluid and replacing it with new fluid to maintain braking performance and safety."
+        },
+        {
+          "name": "Power Steering Fluid Flush",
+          "price": 2200.00,
+          "description": "Flushing out old power steering fluid and replacing it to ensure smooth and responsive steering."
+        }
+      ]
+    },
+    {
+      "category": "Mechanical Repairs",
+      "items": [
+        {
+          "name": "Brake Pad & Disc Replacement",
+          "price": 8500.00,
+          "description": "Replacement of worn brake pads and resurfacing or replacing brake discs/rotors for optimal stopping power."
+        },
+        {
+          "name": "Suspension Repair (Shocks/Struts)",
+          "price": -1.0,
+          "description": "Diagnosis and repair of suspension components like shocks, struts, and bushes to restore ride comfort and handling."
+        },
+        {
+          "name": "Clutch System Replacement",
+          "price": -1.0,
+          "description": "Complete replacement of the clutch assembly (clutch plate, pressure plate, release bearing) for manual transmission vehicles."
+        },
+        {
+          "name": "Timing Belt/Chain Replacement",
+          "price": -1.0,
+          "description": "Replacement of the timing belt or chain at recommended intervals to prevent catastrophic engine failure."
+        },
+        {
+          "name": "Engine Tune-Up",
+          "price": 7000.00,
+          "description": "Comprehensive service including spark plug replacement, throttle body cleaning, and sensor checks for optimal engine health."
+        },
+        {
+          "name": "Water Body Replacement",
+          "price": -1.0,
+          "description": "Replacement of a leaking or failing water pump to ensure proper engine cooling."
+        }
+      ]
+    },
+    {
+      "category": "Battery & Electrical Services",
+      "items": [
+        {
+          "name": "Battery Testing & Replacement",
+          "price": -1.0,
+          "description": "Comprehensive testing of battery health and replacement if necessary. Price varies based on battery type."
+        },
+        {
+          "name": "Starter & Alternator Diagnosis/Repair",
+          "price": 3500.00,
+          "description": "Diagnosing and repairing or replacing faulty starter motors and alternators to ensure your car starts and runs reliably."
+        },
+        {
+          "name": "Lighting & Bulb Replacement",
+          "price": 800.00,
+          "description": "Replacement of non-functional headlights, tail lights, indicators, or interior bulbs."
+        },
+        {
+          "name": "Wiring & Short Circuit Repair",
+          "price": -1.0,
+          "description": "Expert diagnosis and repair of complex electrical wiring issues and short circuits."
+        }
+      ]
+    },
+    {
+      "category": "AC & Heating Services",
+      "items": [
+        {
+          "name": "AC Gas Charging & Leak Test",
+          "price": 4000.00,
+          "description": "Evacuating the AC system, checking for leaks, and recharging with the correct amount of refrigerant for cool air."
+        },
+        {
+          "name": "AC Compressor Repair/Replacement",
+          "price": -1.0,
+          "description": "Diagnosing and fixing or replacing the AC compressor, the heart of the car's air conditioning system."
+        },
+        {
+          "name": "Heater Core & Blower Motor Service",
+          "price": -1.0,
+          "description": "Inspection and repair of the heater core and blower motor to ensure proper heating during cold weather."
+        },
+        {
+          "name": "AC Vent & Duct Cleaning",
+          "price": 2500.00,
+          "description": "Cleaning and disinfecting the AC vents and ducts to remove allergens and improve air quality."
+        }
+      ]
+    },
+    {
+      "category": "Tires & Alignment",
+      "items": [
+        {
+          "name": "Tire Rotation",
+          "price": 1000.00,
+          "description": "Rotating tires to different positions to ensure even tire wear and extend their lifespan."
+        },
+        {
+          "name": "Wheel Balancing",
+          "price": 1500.00,
+          "description": "Balancing wheels to prevent vibrations at high speeds and ensure a smooth ride."
+        },
+        {
+          "name": "Computerized Wheel Alignment",
+          "price": 2500.00,
+          "description": "Adjusting the angles of the wheels to the manufacturer's specifications for better handling and tire longevity."
+        },
+        {
+          "name": "Puncture Repair",
+          "price": 500.00,
+          "description": "Professionally repairing a punctured tire to make it safe and roadworthy again."
+        }
+      ]
+    },
+    {
+      "category": "Inspections & Diagnostics",
+      "items": [
+        {
+          "name": "Engine Diagnostics (OBD Scanning)",
+          "price": 2000.00,
+          "description": "Using an OBD-II scanner to read fault codes and diagnose issues related to the 'Check Engine' light."
+        },
+        {
+          "name": "Pre-Purchase Inspection",
+          "price": 7500.00,
+          "description": "A thorough inspection of a used vehicle before purchase to identify potential issues and save future costs."
+        },
+        {
+          "name": "Brake System Inspection",
+          "price": 1500.00,
+          "description": "A detailed check of the entire braking system including pads, discs, lines, and fluid."
+        }
+      ]
+    },
+    {
+      "category": "Detailing & Cleaning",
+      "items": [
+        {
+          "name": "Exterior Wash & Wax",
+          "price": 2000.00,
+          "description": "Comprehensive exterior car wash, followed by a hand-applied wax for shine and protection."
+        },
+        {
+          "name": "Interior Deep Cleaning",
+          "price": 4500.00,
+          "description": "Complete vacuuming, upholstery shampooing, and cleaning of all interior surfaces."
+        },
+        {
+          "name": "Headlight Restoration",
+          "price": 2500.00,
+          "description": "Restoring faded and yellowed headlights to improve visibility and appearance."
+        },
+        {
+          "name": "Paint Touch-ups & Dent Removal",
+          "price": -1.0,
+          "description": "Minor paint corrections and removal of small dents to restore the vehicle's bodywork."
+        }
+      ]
+    }
+  ]
+}

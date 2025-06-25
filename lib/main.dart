@@ -1,19 +1,20 @@
 // lib/main.dart
 import 'dart:io' show Platform;
+import 'package:autoshop_manager/core/providers.dart';
+import 'package:autoshop_manager/core/router.dart';
+import 'package:autoshop_manager/core/setup_providers.dart';
 import 'package:autoshop_manager/data/database/app_database.dart';
+import 'package:autoshop_manager/data/repositories/auth_repository.dart';
 import 'package:autoshop_manager/data/repositories/preference_repository.dart';
+import 'package:autoshop_manager/data/repositories/service_repository.dart';
+import 'package:autoshop_manager/features/auth/presentation/auth_providers.dart';
+import 'package:autoshop_manager/features/reminders/data/reminder_repository.dart';
 import 'package:autoshop_manager/features/reminders/domain/reminder_service.dart';
 import 'package:autoshop_manager/services/notification_service.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:autoshop_manager/core/router.dart';
 import 'package:workmanager/workmanager.dart';
-
-// --- UPDATED IMPORTS ---
-import 'package:autoshop_manager/core/providers.dart';
-import 'package:autoshop_manager/features/reminders/data/reminder_repository.dart';
-
 
 @pragma('vm:entry-point')
 void callbackDispatcher() {
@@ -62,24 +63,38 @@ void callbackDispatcher() {
   });
 }
 
-// Global instance of the notification service
 final NotificationService notificationService = NotificationService();
 const reminderTask = "com.autoshop_manager.reminderCheck";
 
-// --- Main Application Entry Point ---
-
 Future<void> main() async {
-  // Ensure Flutter engine is ready
   WidgetsFlutterBinding.ensureInitialized();
   
-  // --- UPDATED: Create single instances of DB and Repo at startup ---
+  final prefs = PreferenceRepository();
+  final isSetupComplete = await prefs.isSetupComplete();
+
   final db = AppDatabase();
+  final authRepo = AuthRepository(db);
   final reminderRepo = ReminderRepository(db);
-  
-  // Call the new repository method to seed the data
-  await reminderRepo.seedTemplatesFromJson();
-  
-  // Initialize background services
+  final serviceRepo = ServiceRepository(db);
+
+  final overrides = [
+    appDatabaseProvider.overrideWithValue(db),
+    authRepositoryProvider.overrideWithValue(authRepo),
+    reminderRepositoryProvider.overrideWithValue(reminderRepo),
+    serviceRepositoryProvider.overrideWithValue(serviceRepo),
+    setupCompleteProvider.overrideWith((ref) => isSetupComplete),
+  ];
+
+  final container = ProviderContainer(overrides: overrides);
+
+  if (isSetupComplete) {
+    await container.read(authNotifierProvider.notifier).tryAutoLogin();
+  } else {
+    // Seed the database if this is the first run
+    await container.read(reminderRepositoryProvider).seedTemplatesFromJson();
+    await container.read(serviceRepositoryProvider).seedServicesFromJson();
+  }
+
   await notificationService.init();
   if (Platform.isAndroid || Platform.isIOS) {
     await Workmanager().initialize(
@@ -90,22 +105,15 @@ Future<void> main() async {
       reminderTask,
       "reminderCheck",
       frequency: const Duration(hours: 12),
-      constraints: Constraints(
-        networkType: NetworkType.not_required,
-        requiresCharging: false,
-      ),
     );
-    Workmanager().registerOneOffTask("1", "reminderCheckOneOff");
   }
 
-  // --- UPDATED: Override both providers with our single instances ---
-  runApp(ProviderScope(
-    overrides: [
-      appDatabaseProvider.overrideWithValue(db),
-      reminderRepositoryProvider.overrideWithValue(reminderRepo),
-    ],
-    child: const MyApp(),
-  ));
+  runApp(
+    UncontrolledProviderScope(
+      container: container,
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends ConsumerWidget {
@@ -113,7 +121,7 @@ class MyApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final router = appRouter;
+    final router = ref.watch(routerProvider);
 
     return MaterialApp.router(
       routerConfig: router,

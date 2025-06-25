@@ -1,79 +1,86 @@
 // lib/features/service/presentation/service_providers.dart
+import 'package:autoshop_manager/data/repositories/service_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:autoshop_manager/data/database/app_database.dart'; // For Service and ServicesCompanion
-import 'package:autoshop_manager/data/repositories/service_repository.dart'; // For ServiceRepository
+import 'package:autoshop_manager/data/database/app_database.dart';
 
-// StateNotifierProvider for managing the list of services
-final serviceNotifierProvider = StateNotifierProvider<ServiceNotifier, AsyncValue<List<Service>>>((ref) {
-  return ServiceNotifier(ref.read(serviceRepositoryProvider));
+// --- NEW: Provider for the search query ---
+final serviceSearchQueryProvider = StateProvider.autoDispose<String>((ref) => '');
+
+// --- UPDATED: This now fetches the filtered list based on the search query ---
+final serviceListProvider = FutureProvider.autoDispose<List<Service>>((ref) {
+  final repository = ref.watch(serviceRepositoryProvider);
+  final query = ref.watch(serviceSearchQueryProvider);
+  return repository.getAllServices(query: query);
 });
 
-// FutureProvider to expose the list of services from the notifier's state
-final serviceListProvider = Provider<AsyncValue<List<Service>>>((ref) {
-  return ref.watch(serviceNotifierProvider);
+// --- UPDATED: The notifier is now for actions (add, update, delete, reset) ---
+final serviceNotifierProvider =
+    StateNotifierProvider.autoDispose<ServiceNotifier, AsyncValue<void>>((ref) {
+  return ServiceNotifier(ref);
 });
 
-// FutureProvider.family to get a single service by ID
-final serviceByIdProvider = FutureProvider.family<Service?, int>((ref, serviceId) async {
-  return ref.read(serviceRepositoryProvider).getServiceById(serviceId);
-});
+class ServiceNotifier extends StateNotifier<AsyncValue<void>> {
+  ServiceNotifier(this._ref) : super(const AsyncData(null));
 
-class ServiceNotifier extends StateNotifier<AsyncValue<List<Service>>> {
-  final ServiceRepository _serviceRepository;
-
-  ServiceNotifier(this._serviceRepository) : super(const AsyncValue.loading()) {
-    _fetchServices();
-  }
-
-  // Fetches all services from the repository and updates the state
-  Future<void> _fetchServices() async {
-    try {
-      state = const AsyncValue.loading();
-      final services = await _serviceRepository.getAllServices();
-      state = AsyncValue.data(services);
-    } catch (e, st) {
-      state = AsyncValue.error(e, st);
-    }
-  }
+  final Ref _ref;
 
   // Adds a new service
   Future<bool> addService(ServicesCompanion entry) async {
+    state = const AsyncLoading();
     try {
-      await _serviceRepository.addService(entry);
-      await _fetchServices(); // Refresh list after adding
+      await _ref.read(serviceRepositoryProvider).addService(entry);
+      _ref.invalidate(serviceListProvider); // Invalidate to refresh the list
+      state = const AsyncData(null);
       return true;
-    } catch (e) {
-      print('Error adding service: $e');
+    } catch (e, st) {
+      state = AsyncError(e, st);
       return false;
     }
   }
 
   // Updates an existing service
   Future<bool> updateService(Service service) async {
+    state = const AsyncLoading();
     try {
-      final success = await _serviceRepository.updateService(service);
+      final success = await _ref.read(serviceRepositoryProvider).updateService(service);
       if (success) {
-        await _fetchServices(); // Refresh list after updating
+        _ref.invalidate(serviceListProvider); // Invalidate to refresh the list
       }
+      state = const AsyncData(null);
       return success;
-    } catch (e) {
-      print('Error updating service: $e');
+    } catch (e, st) {
+      state = AsyncError(e, st);
       return false;
     }
   }
 
   // Deletes a service by ID
   Future<bool> deleteService(int id) async {
+    state = const AsyncLoading();
     try {
-      final success = await _serviceRepository.deleteService(id);
+      final success = await _ref.read(serviceRepositoryProvider).deleteService(id);
       if (success) {
-        await _fetchServices(); // Refresh list after deleting
+        _ref.invalidate(serviceListProvider); // Invalidate to refresh the list
       }
+      state = const AsyncData(null);
       return success;
-    } catch (e) {
-      print('Error deleting service: $e');
+    } catch (e, st) {
+      state = AsyncError(e, st);
+      return false;
+    }
+  }
+
+  // Resets the default services from the JSON file
+  Future<bool> resetDefaultServices() async {
+    state = const AsyncLoading();
+    try {
+      await _ref.read(serviceRepositoryProvider).seedServicesFromJson(forceReset: true);
+      _ref.invalidate(serviceListProvider); // Invalidate to refresh the list
+      state = const AsyncData(null);
+      return true;
+    } catch (e, st) {
+      state = AsyncError(e, st);
       return false;
     }
   }
 }
-

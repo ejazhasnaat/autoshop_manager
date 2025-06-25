@@ -1,13 +1,13 @@
 // lib/features/inventory/presentation/screens/inventory_list_screen.dart
+import 'package:autoshop_manager/core/extensions/iterable_extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:autoshop_manager/features/inventory/presentation/inventory_providers.dart';
 import 'package:autoshop_manager/widgets/common_app_bar.dart';
-import 'package:autoshop_manager/features/vehicle/presentation/vehicle_model_providers.dart'; // For vehicle models in filter
-import 'package:autoshop_manager/features/customer/presentation/screens/add_edit_customer_screen.dart'; // For IterableExtension
-import 'package:autoshop_manager/data/database/app_database.dart'; // For InventoryItem type
-import 'package:autoshop_manager/core/constants/app_constants.dart'; // For lowStockThreshold
+import 'package:autoshop_manager/features/vehicle/presentation/vehicle_model_providers.dart';
+import 'package:autoshop_manager/data/database/app_database.dart';
+import 'package:autoshop_manager/core/constants/app_constants.dart';
 import 'package:autoshop_manager/features/settings/presentation/settings_providers.dart';
 
 class InventoryListScreen extends ConsumerStatefulWidget {
@@ -56,9 +56,6 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
     _filterYear = currentFilterState.year;
 
     _searchController.addListener(_onSearchChanged);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _applyFiltersAndSort();
-    });
   }
 
   @override
@@ -107,18 +104,12 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
     if (currentSortState.sortBy == column) {
       newSortAscending = !currentSortState.sortAscending;
     }
-    ref
-        .read(inventoryNotifierProvider.notifier)
-        .applyFiltersAndSort(
-          searchTerm: _searchController.text.isEmpty
-              ? null
-              : _searchController.text,
-          make: _filterMake,
-          model: _filterModel,
-          year: _filterYear,
-          sortBy: column,
-          sortAscending: newSortAscending,
-        );
+    // We only need to set the sort state here.
+    // The applyFiltersAndSort method will read from the state provider.
+    ref.read(inventoryListFilterStateProvider.notifier).update(
+          (state) => state.copyWith(sortBy: column, sortAscending: newSortAscending),
+    );
+    _applyFiltersAndSort();
   }
 
   List<MapEntry<String, ({String label, int flex})>>
@@ -133,9 +124,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
     final vehicleModelsAsync = ref.watch(vehicleModelListProvider);
     final inventoryItemsAsync = ref.watch(inventoryNotifierProvider);
     final currentSortState = ref.watch(inventoryListFilterStateProvider);
-    final currentCurrencySymbol = ref.watch(
-      currentCurrencySymbolProvider,
-    ); 
+    final currentCurrencySymbol = ref.watch(currentCurrencySymbolProvider);
 
     final List<MapEntry<String, ({String label, int flex})>>
     visibleColumnProperties = _getVisibleColumnProperties();
@@ -210,7 +199,8 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                labelText: 'Search by Name, Part Number, Supplier, Location',
+                // --- FIX: Updated search bar label ---
+                labelText: 'Search by Name, Part No, Supplier, Location, Vehicle',
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon:
                     (_searchController.text.isNotEmpty ||
@@ -406,7 +396,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                   );
                 }
                 return ListView.builder(
-                  padding: const EdgeInsets.all(8.0),
+                  padding: const EdgeInsets.only(left: 8.0, right: 8.0, bottom: 80.0), // Padding for FAB
                   itemCount: inventoryItems.length,
                   itemBuilder: (context, index) {
                     final item = inventoryItems[index];
@@ -415,12 +405,12 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
 
                     return Card(
                       margin: const EdgeInsets.symmetric(
-                        vertical: 8.0,
+                        vertical: 4.0,
                         horizontal: 4.0,
                       ),
-                      elevation: 2,
+                      elevation: 1,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(8),
                       ),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
@@ -445,8 +435,8 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                             SizedBox(
                               width: 80,
                               child: Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
                                 children: [
-                                  // --- FIXED: Added padding and constraints to IconButtons ---
                                   IconButton(
                                     padding: const EdgeInsets.all(4.0),
                                     constraints: const BoxConstraints(),
@@ -463,6 +453,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                                     },
                                     tooltip: 'Edit',
                                   ),
+                                  const SizedBox(width: 8),
                                   IconButton(
                                     padding: const EdgeInsets.all(4.0),
                                     constraints: const BoxConstraints(),
@@ -560,12 +551,14 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              if (sortIcon != null)
+              if (sortIcon != null) ...[
+                const SizedBox(width: 4),
                 Icon(
                   sortIcon,
                   size: 16,
                   color: Theme.of(context).colorScheme.primary,
                 ),
+              ]
             ],
           ),
         ),
@@ -579,7 +572,6 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
     bool isLowStock,
     String currencySymbol,
   ) {
-    // <--- ADDED CURRENCY PARAM
     final TextStyle? textStyle = Theme.of(context).textTheme.bodyMedium;
     final TextStyle? lowStockTextStyle = textStyle?.copyWith(
       color: Colors.orange.shade700,
@@ -605,14 +597,12 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
       case 'quantity':
         content = Text(
           '${item.quantity}',
-          textAlign: TextAlign.center,
           style: isLowStock ? lowStockTextStyle : textStyle,
         );
         break;
       case 'salePrice':
         content = Text(
-          '$currencySymbol${item.salePrice.toStringAsFixed(2)}', // <--- USE CURRENCY SYMBOL
-          textAlign: TextAlign.right,
+          '$currencySymbol ${item.salePrice.toStringAsFixed(2)}',
           style: textStyle,
         );
         break;
@@ -648,31 +638,14 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4.0),
       child: Align(
-        alignment: _getColumnAlignmentEnum(columnKey),
+        alignment: _getColumnAlignment(columnKey),
         child: content,
       ),
     );
   }
 
-  MainAxisAlignment _getColumnAlignment(String columnKey) {
-    switch (columnKey) {
-      case 'quantity':
-        return MainAxisAlignment.center;
-      case 'salePrice':
-        return MainAxisAlignment.end;
-      default:
-        return MainAxisAlignment.start;
-    }
-  }
-
-  Alignment _getColumnAlignmentEnum(String columnKey) {
-    switch (columnKey) {
-      case 'quantity':
-        return Alignment.center;
-      case 'salePrice':
-        return Alignment.centerRight;
-      default:
-        return Alignment.centerLeft;
-    }
+  Alignment _getColumnAlignment(String columnKey) {
+    // All columns are now left-aligned as per the requirement.
+    return Alignment.centerLeft;
   }
 }

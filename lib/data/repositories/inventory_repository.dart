@@ -20,7 +20,7 @@ class InventoryRepository {
     String? vehicleModel,
     int? vehicleYear, // Search for items covering this specific year
     String?
-    searchTerm, // Global search term for name/partNumber/supplier/stockLocation
+    searchTerm, // Global search term for name, partNumber, supplier, stockLocation, and vehicle
     String? sortBy, // Field to sort by (e.g., 'name', 'quantity')
     bool sortAscending = true,
   }) async {
@@ -34,7 +34,9 @@ class InventoryRepository {
         _db.inventoryItems.name.lower().like('%$lowerSearchTerm%') |
             _db.inventoryItems.partNumber.lower().like('%$lowerSearchTerm%') |
             _db.inventoryItems.supplier.lower().like('%$lowerSearchTerm%') |
-            _db.inventoryItems.stockLocation.lower().like('%$lowerSearchTerm%'),
+            _db.inventoryItems.stockLocation.lower().like('%$lowerSearchTerm%') |
+            _db.inventoryItems.vehicleMake.lower().like('%$lowerSearchTerm%') |
+            _db.inventoryItems.vehicleModel.lower().like('%$lowerSearchTerm%'),
       );
     }
 
@@ -120,7 +122,8 @@ class InventoryRepository {
   Future<InventoryItem?> getInventoryItemById(int id) async {
     return (_db.select(
       _db.inventoryItems,
-    )..where((item) => item.id.equals(id))).getSingleOrNull();
+    )..where((item) => item.id.equals(id)))
+        .getSingleOrNull();
   }
 
   Future<int> addInventoryItem(InventoryItemsCompanion entry) async {
@@ -147,7 +150,8 @@ class InventoryRepository {
   Future<bool> deleteInventoryItem(int itemId) async {
     final existingOrderItems = await (_db.select(
       _db.orderItems,
-    )..where((oi) => oi.itemId.equals(itemId))).get();
+    )..where((oi) => oi.itemId.equals(itemId)))
+        .get();
 
     if (existingOrderItems.isNotEmpty) {
       print(
@@ -158,7 +162,8 @@ class InventoryRepository {
 
     final count = await (_db.delete(
       _db.inventoryItems,
-    )..where((t) => t.id.equals(itemId))).go();
+    )..where((t) => t.id.equals(itemId)))
+        .go();
     return count > 0;
   }
 }

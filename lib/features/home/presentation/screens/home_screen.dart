@@ -24,28 +24,27 @@ class HomeScreen extends ConsumerWidget {
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'Welcome, ${authState.user?.username ?? 'Guest'}!',
+                // --- UPDATED: Welcome message uses full name ---
+                'Welcome, ${authState.user?.fullName ?? authState.user?.username ?? 'Guest'}!',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
                 textAlign: TextAlign.center,
               ),
               if (authState.isAdmin)
                 Text(
                   '(Admin User)',
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        fontStyle: FontStyle.italic,
-                        color: Theme.of(context).colorScheme.secondary,
-                      ),
+                    fontStyle: FontStyle.italic,
+                    color: Theme.of(context).colorScheme.secondary,
+                  ),
                   textAlign: TextAlign.center,
                 ),
               const SizedBox(height: 24),
-
               upcomingServicesAsync.when(
                 data: (vehicles) => vehicles.isEmpty
                     ? const SizedBox.shrink()
@@ -53,9 +52,7 @@ class HomeScreen extends ConsumerWidget {
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (err, stack) => Center(child: Text('Error: $err')),
               ),
-
               const SizedBox(height: 24),
-
               Wrap(
                 spacing: 20.0,
                 runSpacing: 20.0,
@@ -79,7 +76,6 @@ class HomeScreen extends ConsumerWidget {
                     icon: Icons.receipt_long_outlined,
                     onPressed: () => context.go('/orders'),
                   ),
-                  // --- NEW "Reminders" BUTTON ---
                   _buildFeatureButton(
                     context,
                     label: 'Reminders',
@@ -88,7 +84,7 @@ class HomeScreen extends ConsumerWidget {
                   ),
                   _buildFeatureButton(
                     context,
-                    label: 'Services',
+                    label: 'Repair Services',
                     icon: Icons.design_services_outlined,
                     onPressed: () => context.go('/services'),
                   ),
@@ -113,7 +109,10 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildUpcomingServicesCard(BuildContext context, List<Vehicle> vehicles) {
+  Widget _buildUpcomingServicesCard(
+    BuildContext context,
+    List<Vehicle> vehicles,
+  ) {
     return Card(
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -124,7 +123,9 @@ class HomeScreen extends ConsumerWidget {
           children: [
             Text(
               'Upcoming Services',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const Divider(height: 24),
             ListView.separated(
@@ -143,7 +144,12 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildFeatureButton(BuildContext context, {required String label, required IconData icon, required VoidCallback onPressed}) {
+  Widget _buildFeatureButton(
+    BuildContext context, {
+    required String label,
+    required IconData icon,
+    required VoidCallback onPressed,
+  }) {
     return SizedBox(
       width: 150,
       height: 120,
@@ -157,12 +163,18 @@ class HomeScreen extends ConsumerWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 48, color: Theme.of(context).colorScheme.primary),
+              Icon(
+                icon,
+                size: 48,
+                color: Theme.of(context).colorScheme.primary,
+              ),
               const SizedBox(height: 8),
               Text(
                 label,
                 textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
               ),
             ],
           ),
@@ -179,7 +191,7 @@ class _UpcomingServiceTile extends ConsumerWidget {
   void _sendManualReminder(BuildContext context, Customer customer) async {
     final reminderType = vehicle.nextReminderType ?? 'service';
     final message = Uri.encodeComponent(
-      'Hi ${customer.name}, this is a friendly reminder that your ${vehicle.make ?? ''} ${vehicle.model ?? ''} (Reg: ${vehicle.registrationNumber}) is due for a $reminderType soon. Please contact us to schedule an appointment. Thank you!'
+      'Hi ${customer.name}, this is a friendly reminder that your ${vehicle.make ?? ''} ${vehicle.model ?? ''} (Reg: ${vehicle.registrationNumber}) is due for a $reminderType soon. Please contact us to schedule an appointment. Thank you!',
     );
     final phoneNumber = customer.phoneNumber.replaceAll(RegExp(r'[^0-9]'), '');
     final url = Uri.parse('sms:$phoneNumber&body=$message');
@@ -187,32 +199,41 @@ class _UpcomingServiceTile extends ConsumerWidget {
     if (await canLaunchUrl(url)) {
       await launchUrl(url, mode: LaunchMode.externalApplication);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not launch SMS app.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not launch SMS app.')),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final customerAsync = ref.watch(customerByIdProvider(vehicle.customerId));
-    
+
     return ListTile(
-      title: Text('${vehicle.make ?? ''} ${vehicle.model ?? ''} - ${vehicle.registrationNumber}'),
+      title: Text(
+        '${vehicle.make ?? ''} ${vehicle.model ?? ''} - ${vehicle.registrationNumber}',
+      ),
       subtitle: Text(
         '${vehicle.nextReminderType ?? 'Service'} due on ${DateFormat.yMMMd().format(vehicle.nextReminderDate!)}',
         style: TextStyle(color: Theme.of(context).colorScheme.secondary),
       ),
       trailing: customerAsync.when(
-        data: (customer) => customer == null 
+        data: (customer) => customer == null
             ? const Icon(Icons.error_outline, color: Colors.red)
             : IconButton(
                 icon: const Icon(Icons.send_rounded),
                 tooltip: 'Send Reminder SMS',
-                onPressed: () => _sendManualReminder(context, customer.customer),
+                onPressed: () =>
+                    _sendManualReminder(context, customer.customer),
               ),
-        loading: () => const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2)),
+        loading: () => const SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
         error: (e, st) => const Icon(Icons.error, color: Colors.red),
       ),
-      onTap: () => context.go('/vehicles/${vehicle.id}'),
+      onTap: () => context.go('/vehicles/${vehicle.id!}'),
     );
   }
 }

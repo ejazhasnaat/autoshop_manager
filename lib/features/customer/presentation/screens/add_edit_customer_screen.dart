@@ -1,4 +1,5 @@
 // lib/features/customer/presentation/screens/add_edit_customer_screen.dart
+import 'package:autoshop_manager/core/extensions/iterable_extensions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -26,17 +27,8 @@ class _AddEditCustomerScreenState extends ConsumerState<AddEditCustomerScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
 
-  // This list holds vehicles for a NEW customer before they are saved.
   List<Vehicle> _vehiclesDraft = [];
-  
-  // A helper flag to ensure we only populate the form controllers once.
   bool _controllersPopulated = false;
-
-  @override
-  void initState() {
-    super.initState();
-    // No listeners needed, logic is handled explicitly now.
-  }
 
   @override
   void dispose() {
@@ -49,12 +41,14 @@ class _AddEditCustomerScreenState extends ConsumerState<AddEditCustomerScreen> {
   }
   
   void _populateControllers(CustomerWithVehicles customerWithVehicles) {
+    if (_controllersPopulated) return;
     final customer = customerWithVehicles.customer;
     _nameController.text = customer.name;
     _phoneNumberController.text = customer.phoneNumber;
     _whatsappNumberController.text = customer.whatsappNumber ?? '';
     _emailController.text = customer.email ?? '';
     _addressController.text = customer.address ?? '';
+    _controllersPopulated = true;
   }
 
   Future<void> _saveCustomer() async {
@@ -84,8 +78,9 @@ class _AddEditCustomerScreenState extends ConsumerState<AddEditCustomerScreen> {
         final initialVehicleCompanions = _vehiclesDraft.map((v) => v.toCompanion(true)).toList();
         success = await customerNotifier.addCustomer(customerCompanion, initialVehicleCompanions);
       } else {
-        final currentCustomer = ref.read(customerByIdProvider(widget.customerId!)).value!.customer;
-        final updatedCustomer = currentCustomer.copyWith(
+        final currentCustomerData = ref.read(customerByIdProvider(widget.customerId!)).value;
+        if(currentCustomerData == null) return;
+        final updatedCustomer = currentCustomerData.customer.copyWith(
           name: _nameController.text,
           phoneNumber: _phoneNumberController.text,
           whatsappNumber: Value(finalWhatsappNumber),
@@ -93,13 +88,10 @@ class _AddEditCustomerScreenState extends ConsumerState<AddEditCustomerScreen> {
           address: Value(_addressController.text.isNotEmpty ? _addressController.text : null),
         );
         
-        // FIX: Removed the unnecessary vehicle list and updated the call.
-        // The notifier now only needs the updated customer object.
         success = await customerNotifier.updateCustomer(updatedCustomer);
       }
 
       if (mounted && success) {
-        ref.invalidate(customerListProvider);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(widget.customerId == null ? 'Customer added successfully!' : 'Customer updated successfully!')),
         );
@@ -117,14 +109,7 @@ class _AddEditCustomerScreenState extends ConsumerState<AddEditCustomerScreen> {
     final customerAsync = widget.customerId != null 
         ? ref.watch(customerByIdProvider(widget.customerId!)) 
         : const AsyncValue.data(null);
-
-    if (customerAsync.hasValue && customerAsync.value != null && !_controllersPopulated) {
-      _populateControllers(customerAsync.value!);
-      _controllersPopulated = true;
-    }
     
-    final isLoading = customerAsync.isLoading;
-
     return Scaffold(
       appBar: CommonAppBar(
         title: widget.customerId == null ? 'Add Customer' : 'Edit Customer',
@@ -134,14 +119,17 @@ class _AddEditCustomerScreenState extends ConsumerState<AddEditCustomerScreen> {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(child: Text('Error loading customer: $err')),
         data: (customerData) {
+          if (customerData != null && !_controllersPopulated) {
+            _populateControllers(customerData);
+          }
           final vehicles = customerData?.vehicles ?? _vehiclesDraft;
-          return _buildForm(isLoading, vehicles);
+          return _buildForm(vehicles, customerAsync.isLoading);
         },
       ),
     );
   }
 
-  Widget _buildForm(bool isLoading, List<Vehicle> vehicles) {
+  Widget _buildForm(List<Vehicle> vehicles, bool isLoading) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Form(
@@ -220,7 +208,8 @@ class _AddEditCustomerScreenState extends ConsumerState<AddEditCustomerScreen> {
                   TextFormField(
                     controller: _addressController,
                     decoration: const InputDecoration(labelText: 'Address'),
-                    maxLines: 3,
+                    minLines: 1,
+                    maxLines: 5,
                   ),
                 ],
               ),
@@ -295,20 +284,70 @@ class _AddEditCustomerScreenState extends ConsumerState<AddEditCustomerScreen> {
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                   trailing: (widget.customerId == null) 
-                    ? IconButton(
-                        icon: const Icon(Icons.delete, size: 20, color: Colors.redAccent),
-                        onPressed: () {
-                           setState(() => _vehiclesDraft.removeAt(index));
-                        },
-                        tooltip: 'Remove Vehicle',
+                    ? Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.edit_outlined, size: 20),
+                            tooltip: 'Edit Vehicle',
+                            onPressed: () async {
+                              final updatedVehicle = await context.push<Vehicle>(
+                                '/vehicles/add_draft',
+                                extra: vehicle, // Pass the draft vehicle to the edit screen
+                              );
+                              if (updatedVehicle != null) {
+                                setState(() {
+                                  _vehiclesDraft[index] = updatedVehicle;
+                                });
+                              }
+                            },
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline, size: 20, color: Colors.redAccent),
+                            onPressed: () async {
+                               final confirm = await _showConfirmationDialog(
+                                 context,
+                                 title: 'Remove Vehicle?',
+                                 content: 'Are you sure you want to remove the vehicle with registration "${vehicle.registrationNumber}"?'
+                               );
+                              if (confirm ?? false) {
+                                setState(() => _vehiclesDraft.removeAt(index));
+                              }
+                            },
+                            tooltip: 'Remove Vehicle',
+                          ),
+                        ],
                       )
-                    : IconButton(
-                        icon: const Icon(Icons.edit, size: 20),
-                        tooltip: 'Edit Vehicle',
-                        onPressed: () async {
-                          await context.push('/vehicles/edit/${vehicle.id}?customerId=${widget.customerId}');
-                          ref.invalidate(customerByIdProvider(widget.customerId!));
-                        },
+                    : Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.edit_outlined, size: 20),
+                            tooltip: 'Edit Vehicle',
+                            onPressed: () async {
+                              await context.push('/vehicles/edit/${vehicle.id}?customerId=${widget.customerId}');
+                              ref.invalidate(customerByIdProvider(widget.customerId!));
+                            },
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline, size: 20, color: Colors.redAccent),
+                            tooltip: 'Delete Vehicle',
+                            onPressed: () async {
+                              final confirm = await _showConfirmationDialog(
+                                context,
+                                title: 'Delete Vehicle?',
+                                content: 'Are you sure you want to permanently delete the vehicle with registration "${vehicle.registrationNumber}"? This action cannot be undone.',
+                              );
+                              if (confirm ?? false) {
+                                final success = await ref.read(customerNotifierProvider.notifier).deleteVehicle(vehicle.id);
+                                if(success){
+                                  ref.invalidate(customerByIdProvider(widget.customerId!));
+                                  ref.invalidate(customerNotifierProvider);
+                                }
+                              }
+                            },
+                          ),
+                        ],
                       ),
                 ),
               );
@@ -317,15 +356,18 @@ class _AddEditCustomerScreenState extends ConsumerState<AddEditCustomerScreen> {
       ],
     );
   }
-}
 
-extension IterableExtension<T> on Iterable<T> {
-  T? firstWhereOrNull(bool Function(T element) test) {
-    for (final element in this) {
-      if (test(element)) {
-        return element;
-      }
-    }
-    return null;
+  Future<bool?> _showConfirmationDialog(BuildContext context, {required String title, required String content}) {
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(title),
+        content: Text(content),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Confirm'), style: TextButton.styleFrom(foregroundColor: Colors.red)),
+        ],
+      ),
+    );
   }
 }

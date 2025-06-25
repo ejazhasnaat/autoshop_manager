@@ -1,4 +1,7 @@
+// lib/features/reminders/presentation/screens/reminders_screen.dart
 import 'package:autoshop_manager/data/repositories/customer_repository.dart';
+import 'package:autoshop_manager/features/settings/presentation/settings_providers.dart';
+import 'package:autoshop_manager/features/settings/presentation/workshop_settings_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:autoshop_manager/data/database/app_database.dart';
@@ -10,8 +13,13 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:collection/collection.dart';
 import 'package:go_router/go_router.dart';
 
+// REMOVED: The urduTranslationMap and all related logic have been deleted.
+
 class RemindersScreen extends ConsumerStatefulWidget {
-  const RemindersScreen({super.key});
+  final int? customerId;
+  final bool showCloseButton;
+
+  const RemindersScreen({super.key, this.customerId, this.showCloseButton = false});
 
   @override
   ConsumerState<RemindersScreen> createState() => _RemindersScreenState();
@@ -20,16 +28,33 @@ class RemindersScreen extends ConsumerStatefulWidget {
 class _RemindersScreenState extends ConsumerState<RemindersScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   
-  // State for the "Send Reminder" tab is managed here
   CustomerWithVehicles? _selectedCustomer;
   Vehicle? _selectedVehicle;
   MessageTemplate? _selectedTemplate;
   final _messageController = TextEditingController();
+  // REMOVED: State variables for translation are no longer needed.
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    
+    if (widget.customerId != null) {
+      _prefillData();
+    }
+  }
+
+  void _prefillData() async {
+    await Future.delayed(const Duration(milliseconds: 100)); 
+    final customers = ref.read(customerListProvider).valueOrNull ?? [];
+    if (customers.isEmpty || !mounted) return;
+    
+    final customer = customers.firstWhereOrNull((c) => c.customer.id == widget.customerId);
+    if(customer != null) {
+      setState(() {
+        _selectedCustomer = customer;
+      });
+    }
   }
 
   @override
@@ -67,6 +92,8 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> with SingleTi
     _messageController.text = message;
   }
   
+  // REMOVED: The _translateMessage method has been deleted.
+  
   void _sendMessage(String scheme, String phoneNumber) async {
     final encodedMessage = Uri.encodeComponent(_messageController.text);
     final isWhatsApp = scheme.contains('wa.me');
@@ -81,10 +108,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> with SingleTi
     }
   }
   
-  void _prefillFromUpcoming(ShopSetting shopSettings, Map<String, dynamic> data) {
-    final customer = data['customer'] as CustomerWithVehicles;
-    final vehicle = data['vehicle'] as Vehicle;
-    
+  void _prefillFromUpcoming(ShopSetting shopSettings, CustomerWithVehicles customer, Vehicle vehicle) {
     setState(() {
       _selectedCustomer = customer;
       _selectedVehicle = vehicle;
@@ -99,22 +123,30 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> with SingleTi
     return Scaffold(
       appBar: CommonAppBar(
         title: 'Reminders', 
-        showBackButton: true,
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(text: 'Send Reminder', icon: Icon(Icons.send_outlined)),
-            Tab(text: 'Upcoming', icon: Icon(Icons.calendar_today_outlined)),
-          ],
-        ),
+        showBackButton: !widget.showCloseButton,
+        showCloseButton: widget.showCloseButton,
       ),
-      body: TabBarView(
-        controller: _tabController,
+      body: Column(
         children: [
-          // --- TAB 1: Send Reminder UI ---
-          _buildSendReminderTab(canSend),
-          // --- TAB 2: Upcoming Reminders UI ---
-          _buildUpcomingRemindersTab(),
+          Material(
+            color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.4),
+            child: TabBar(
+              controller: _tabController,
+              tabs: const [
+                Tab(text: 'Send Reminder'),
+                Tab(text: 'Upcoming'),
+              ],
+            ),
+          ),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildSendReminderTab(canSend),
+                _buildUpcomingRemindersTab(),
+              ],
+            ),
+          )
         ],
       )
     );
@@ -123,9 +155,9 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> with SingleTi
   Widget _buildSendReminderTab(bool canSend) {
     final customersAsync = ref.watch(customerListProvider);
     final templatesAsync = ref.watch(messageTemplatesProvider);
-    final shopSettingsAsync = ref.watch(shopSettingsProvider);
+    final workshopSettingsAsync = ref.watch(workshopSettingsProvider);
 
-    return shopSettingsAsync.when(
+    return workshopSettingsAsync.when(
       data: (shopSettings) {
         return SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
@@ -141,7 +173,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> with SingleTi
                     setState(() {
                       _selectedCustomer = val;
                       _selectedVehicle = null;
-                      _populateMessage(shopSettings);
+                      if (shopSettings != null) _populateMessage(shopSettings);
                     });
                   },
                 ),
@@ -157,7 +189,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> with SingleTi
                   onChanged: (val) {
                     setState(() {
                       _selectedVehicle = val;
-                      _populateMessage(shopSettings);
+                      if (shopSettings != null) _populateMessage(shopSettings);
                     });
                   },
                 ),
@@ -167,17 +199,27 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> with SingleTi
                 children: [
                   Expanded(
                     child: templatesAsync.when(
-                      data: (templates) => DropdownButtonFormField<MessageTemplate>(
-                        value: _selectedTemplate,
-                        decoration: const InputDecoration(labelText: 'Select Template', border: OutlineInputBorder()),
-                        items: templates.map((t) => DropdownMenuItem(value: t, child: Text(t.title))).toList(),
-                        onChanged: (val) {
-                          setState(() {
-                            _selectedTemplate = val;
-                            _populateMessage(shopSettings);
-                          });
-                        },
-                      ),
+                      data: (templates) {
+                        // FIX: Ensure the selected value is an instance from the current items list
+                        // to prevent object equality errors in the DropdownButton.
+                        final MessageTemplate? currentSelection = _selectedTemplate == null
+                            ? null
+                            // We find the item in the new list that matches our state object.
+                            // `templateType` is assumed to be a unique identifier.
+                            : templates.firstWhereOrNull((t) => t.templateType == _selectedTemplate!.templateType);
+
+                        return DropdownButtonFormField<MessageTemplate>(
+                          value: currentSelection, // Use the synchronized value
+                          decoration: const InputDecoration(labelText: 'Select Template', border: OutlineInputBorder()),
+                          items: templates.map((t) => DropdownMenuItem(value: t, child: Text(t.title))).toList(),
+                          onChanged: (val) {
+                            setState(() {
+                              _selectedTemplate = val;
+                              if (shopSettings != null) _populateMessage(shopSettings);
+                            });
+                          },
+                        );
+                      },
                       loading: () => const Center(child: LinearProgressIndicator()),
                       error: (e,s) => const Center(child: Text("Error loading templates"))
                     ),
@@ -226,13 +268,13 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> with SingleTi
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (err, stack) => Center(child: Text('Error loading settings: $err')),
+      error: (err, stack) => Center(child: Text('Error loading workshop settings: $err')),
     );
   }
-  
+
   Widget _buildUpcomingRemindersTab() {
     final upcomingAsync = ref.watch(upcomingRemindersProvider);
-    final shopSettingsAsync = ref.watch(shopSettingsProvider);
+    final workshopSettingsAsync = ref.watch(workshopSettingsProvider);
 
     return upcomingAsync.when(
       data: (vehicles) {
@@ -246,9 +288,9 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> with SingleTi
             return _UpcomingReminderTile(
               vehicle: vehicles[index],
               onSend: (customer) {
-                // When send is clicked, pre-fill data and switch to the first tab
-                if (shopSettingsAsync.hasValue) {
-                  _prefillFromUpcoming(shopSettingsAsync.value!, {'customer': customer, 'vehicle': vehicles[index]});
+                final shopSettings = workshopSettingsAsync.value;
+                if (shopSettings != null) {
+                  _prefillFromUpcoming(shopSettings, customer, vehicles[index]);
                 }
                 _tabController.animateTo(0);
               },

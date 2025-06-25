@@ -1,22 +1,46 @@
-// lib/features/vehicle_model/presentation/vehicle_model_providers.dart
+import 'dart:convert';
+import 'package:flutter/services.dart' show rootBundle;
+import 'package:autoshop_manager/data/repositories/vehicle_model_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:drift/drift.dart' hide Column; // For Value and Companion types
-import 'package:autoshop_manager/data/database/app_database.dart'; // For VehicleModel and VehicleModelsCompanion
-import 'package:autoshop_manager/data/repositories/vehicle_model_repository.dart'; // For VehicleModelRepository
+import 'package:drift/drift.dart' hide Column;
+import 'package:autoshop_manager/data/database/app_database.dart';
+
+// --- MAIN PROVIDER FOR UI DROPDOWNS ---
+// This provider now loads the vehicle models directly from the JSON asset file.
+// This is what the "Add Vehicle" screen will use to populate the dropdowns.
+final vehicleModelListProvider = FutureProvider.autoDispose<List<VehicleModel>>((ref) async {
+  try {
+    // Load the JSON string from the asset bundle
+    final jsonString = await rootBundle.loadString('assets/vehicle_models.json');
+    
+    // Decode the JSON string into a list of dynamic objects
+    final List<dynamic> jsonList = json.decode(jsonString);
+    
+    // Map the JSON list to a list of VehicleModel data classes.
+    // Drift's generated .fromJson constructor handles this perfectly.
+    final models = jsonList.map((json) => VehicleModel.fromJson(json)).toList();
+    
+    return models;
+  } catch (e) {
+    // If anything goes wrong (file not found, JSON format error),
+    // we throw an exception that will be caught by the .when() in the UI.
+    print('Failed to load vehicle models: $e');
+    throw Exception('Could not load vehicle models from JSON.');
+  }
+});
 
 
-// StateNotifierProvider for managing the list of vehicle models
-final vehicleModelNotifierProvider = StateNotifierProvider<VehicleModelNotifier, AsyncValue<List<VehicleModel>>>((ref) {
+// --- DATABASE-RELATED PROVIDERS ---
+// The Notifier and Repository below are for managing models if you were
+// to store them in the database (e.g., if users could add/edit models from a different screen).
+
+// StateNotifierProvider for managing the list of vehicle models stored in the database
+final vehicleModelNotifierProvider = StateNotifierProvider.autoDispose<VehicleModelNotifier, AsyncValue<List<VehicleModel>>>((ref) {
   return VehicleModelNotifier(ref.read(vehicleModelRepositoryProvider));
 });
 
-// FutureProvider to expose the list of vehicle models from the notifier's state
-final vehicleModelListProvider = Provider<AsyncValue<List<VehicleModel>>>((ref) {
-  return ref.watch(vehicleModelNotifierProvider);
-});
-
-// FutureProvider.family to get a single vehicle model by make and model (composite key)
-final vehicleModelByMakeModelProvider = FutureProvider.family<VehicleModel?, (String, String)>((ref, makeModelTuple) async {
+// FutureProvider.family to get a single vehicle model from the database by make and model
+final vehicleModelByMakeModelProvider = FutureProvider.family.autoDispose<VehicleModel?, (String, String)>((ref, makeModelTuple) async {
   final make = makeModelTuple.$1;
   final model = makeModelTuple.$2;
   return ref.read(vehicleModelRepositoryProvider).getVehicleModelByMakeModel(make, model);
@@ -41,7 +65,6 @@ class VehicleModelNotifier extends StateNotifier<AsyncValue<List<VehicleModel>>>
     }
   }
 
-  // Adds a new vehicle model
   Future<bool> addVehicleModel(VehicleModelsCompanion entry) async {
     try {
       await _repository.addVehicleModel(entry);
@@ -53,7 +76,6 @@ class VehicleModelNotifier extends StateNotifier<AsyncValue<List<VehicleModel>>>
     }
   }
 
-  // Updates an existing vehicle model
   Future<bool> updateVehicleModel(VehicleModel vehicleModel) async {
     try {
       final success = await _repository.updateVehicleModel(vehicleModel);
@@ -67,7 +89,6 @@ class VehicleModelNotifier extends StateNotifier<AsyncValue<List<VehicleModel>>>
     }
   }
 
-  // Deletes a vehicle model by make and model
   Future<bool> deleteVehicleModel(String make, String model) async {
     try {
       final success = await _repository.deleteVehicleModel(make, model);
@@ -81,4 +102,3 @@ class VehicleModelNotifier extends StateNotifier<AsyncValue<List<VehicleModel>>>
     }
   }
 }
-

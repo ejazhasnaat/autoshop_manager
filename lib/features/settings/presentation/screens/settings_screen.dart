@@ -15,59 +15,53 @@ class SettingsScreen extends ConsumerStatefulWidget {
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   final _formKey = GlobalKey<FormState>();
   final List<String> _supportedCurrencies = const ['PKR', 'USD', 'EUR', 'GBP', 'JPY'];
+
   String? _currentCurrency;
-  
-  // Controllers for intervals are removed from here
-
-  @override
-  void initState() {
-    super.initState();
-    _loadSettings();
-  }
-
-  void _loadSettings() {
-    ref.read(preferenceRepositoryProvider).getPreferences().then((prefs) {
-      if (mounted) {
-        setState(() {
-          _currentCurrency = prefs.defaultCurrency;
-        });
-      }
-    });
-  }
+  bool _isInitialDataLoaded = false;
+  bool _didSettingsChange = false; // Flag to check if a save is needed.
 
   @override
   void dispose() {
-    // Disposing controllers is removed from here
+    if (_didSettingsChange) {
+      _saveSettings();
+    }
     super.dispose();
   }
 
   void _saveSettings() async {
-    if (_formKey.currentState!.validate()) {
-      // Need to read the current prefs to avoid overwriting interval settings
-      final currentPrefs = await ref.read(preferenceRepositoryProvider).getPreferences();
-      final newPrefs = currentPrefs.copyWith(
-        defaultCurrency: _currentCurrency ?? 'PKR',
-      );
+    // This method is now called from dispose, so we don't use form validation or show a snackbar.
+    final notifier = ref.read(settingsNotifierProvider.notifier);
+    final currentPrefs = await ref.read(preferenceRepositoryProvider).getPreferences();
+    
+    final newPrefs = currentPrefs.copyWith(
+      defaultCurrency: _currentCurrency ?? 'PKR',
+    );
 
-      final success = await ref.read(settingsNotifierProvider.notifier).savePreferences(newPrefs);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(success ? 'Settings saved!' : 'Failed to save settings.')),
-        );
-      }
+    final success = await notifier.savePreferences(newPrefs);
+
+    if (success) {
+      // Invalidate the provider to ensure the rest of the app gets the fresh settings.
+      ref.invalidate(userPreferencesStreamProvider);
+    } else {
+      print('Failed to auto-save settings.');
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final settingsAsync = ref.watch(settingsNotifierProvider);
+    final settingsAsync = ref.watch(userPreferencesStreamProvider);
 
     return Scaffold(
-      appBar: const CommonAppBar(title: 'Settings', showBackButton: true),
+      appBar: const CommonAppBar(title: 'App Settings', showCloseButton: true),
       body: settingsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(child: Text('Error loading settings: $err')),
         data: (prefs) {
+          if (!_isInitialDataLoaded) {
+            _currentCurrency = prefs.defaultCurrency;
+            _isInitialDataLoaded = true;
+          }
+
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
             child: Form(
@@ -88,17 +82,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           }).toList(),
                           onChanged: (String? newValue) {
                             if (newValue != null) {
-                              setState(() => _currentCurrency = newValue);
+                              setState(() {
+                                _currentCurrency = newValue;
+                                _didSettingsChange = true;
+                              });
                             }
                           },
                         ),
                       ),
                     ],
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton(
-                    onPressed: _saveSettings,
-                    child: const Text('Save Settings'),
                   ),
                 ],
               ),

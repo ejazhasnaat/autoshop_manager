@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:autoshop_manager/core/providers.dart';
 
 final reminderRepositoryProvider = Provider<ReminderRepository>((ref) {
-  // This will be overridden in main.dart, but we keep a fallback.
   return ReminderRepository(ref.watch(appDatabaseProvider));
 });
 
@@ -14,12 +13,11 @@ class ReminderRepository {
   final AppDatabase _db;
   ReminderRepository(this._db);
 
-  // --- NEW: Seeding logic is now part of the repository ---
   Future<void> seedTemplatesFromJson({bool forceReset = false}) async {
     try {
       if (!forceReset) {
         final count = await (_db.select(_db.messageTemplates)).get().then((value) => value.length);
-        if (count > 0) return; // Already seeded
+        if (count > 0) return;
       }
 
       final jsonString = await rootBundle.loadString('assets/reminder_templates.json');
@@ -36,9 +34,6 @@ class ReminderRepository {
       await _db.batch((batch) {
         batch.insertAllOnConflictUpdate(_db.messageTemplates, companions);
       });
-
-      print('Successfully seeded/reset reminder templates from JSON.');
-
     } catch (e) {
       print('Error seeding templates from JSON: $e');
     }
@@ -46,6 +41,12 @@ class ReminderRepository {
 
   Future<ShopSetting> getShopSettings() async {
     return (_db.select(_db.shopSettings)..where((s) => s.id.equals(1))).getSingle();
+  }
+
+  Future<bool> updateShopSettings(ShopSettingsCompanion settings) {
+    return (_db.update(_db.shopSettings)..where((s) => s.id.equals(1)))
+        .write(settings)
+        .then((value) => value > 0);
   }
 
   Future<List<Vehicle>> getUpcomingReminders({int days = 7}) async {
@@ -97,7 +98,7 @@ class ReminderRepository {
     return _db.into(_db.messageTemplates).insertOnConflictUpdate(template);
   }
 
-  Future<bool> deleteMessageTemplate(String templateType) {
+  Future<bool> deleteMessageTemplate(String templateType) async {
     return (_db.delete(_db.messageTemplates)
           ..where((t) => t.templateType.equals(templateType)))
         .go()

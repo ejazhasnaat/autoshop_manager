@@ -2,7 +2,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// Keys for storing values in shared_preferences
+const String _kKeepMeLoggedIn = 'keepMeLoggedIn';
+const String _kSetupComplete = 'setupComplete';
+const String _kAutoLoginUser = 'autoLoginUsername';
 const String _kCurrency = 'defaultCurrency';
 const String _kEngineKm = 'engineOilIntervalKm';
 const String _kEngineMonths = 'engineOilIntervalMonths';
@@ -10,8 +12,8 @@ const String _kGearKm = 'gearOilIntervalKm';
 const String _kGearMonths = 'gearOilIntervalMonths';
 const String _kGeneralKm = 'generalServiceIntervalKm';
 const String _kGeneralMonths = 'generalServiceIntervalMonths';
+const String _kLocalLanguage = 'localLanguage';
 
-// Data class to hold all user preferences
 class UserPreferences {
   final String defaultCurrency;
   final int engineOilIntervalKm;
@@ -20,6 +22,7 @@ class UserPreferences {
   final int gearOilIntervalMonths;
   final int generalServiceIntervalKm;
   final int generalServiceIntervalMonths;
+  final String localLanguage;
 
   UserPreferences({
     this.defaultCurrency = 'PKR',
@@ -29,10 +32,10 @@ class UserPreferences {
     this.gearOilIntervalMonths = 24,
     this.generalServiceIntervalKm = 10000,
     this.generalServiceIntervalMonths = 12,
+    // UPDATE: Set a default value for the new property.
+    this.localLanguage = 'English',
   });
 
-  // --- FIX: Added the copyWith method ---
-  // This allows creating a new instance with updated values while preserving the old ones.
   UserPreferences copyWith({
     String? defaultCurrency,
     int? engineOilIntervalKm,
@@ -41,6 +44,7 @@ class UserPreferences {
     int? gearOilIntervalMonths,
     int? generalServiceIntervalKm,
     int? generalServiceIntervalMonths,
+    String? localLanguage,
   }) {
     return UserPreferences(
       defaultCurrency: defaultCurrency ?? this.defaultCurrency,
@@ -50,18 +54,51 @@ class UserPreferences {
       gearOilIntervalMonths: gearOilIntervalMonths ?? this.gearOilIntervalMonths,
       generalServiceIntervalKm: generalServiceIntervalKm ?? this.generalServiceIntervalKm,
       generalServiceIntervalMonths: generalServiceIntervalMonths ?? this.generalServiceIntervalMonths,
+      localLanguage: localLanguage ?? this.localLanguage,
     );
   }
 }
 
-// Provider for the repository
 final preferenceRepositoryProvider = Provider<PreferenceRepository>((ref) {
   return PreferenceRepository();
 });
 
-// This repository now uses SharedPreferences for local, persistent storage.
 class PreferenceRepository {
-  // Method to get all preferences, providing defaults if they don't exist.
+  // --- NEW: Methods for "Keep me logged in" ---
+  Future<bool> getKeepMeLoggedIn() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_kKeepMeLoggedIn) ?? false;
+  }
+
+  Future<void> saveKeepMeLoggedIn(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_kKeepMeLoggedIn, value);
+  }
+
+  Future<bool> isSetupComplete() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_kSetupComplete) ?? false;
+  }
+
+  Future<void> markSetupAsComplete() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_kSetupComplete, true);
+  }
+
+  Future<void> setAutoLoginUser(String? username) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (username != null) {
+      await prefs.setString(_kAutoLoginUser, username);
+    } else {
+      await prefs.remove(_kAutoLoginUser);
+    }
+  }
+
+  Future<String?> getAutoLoginUsername() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_kAutoLoginUser);
+  }
+
   Future<UserPreferences> getPreferences() async {
     final prefs = await SharedPreferences.getInstance();
     return UserPreferences(
@@ -72,10 +109,10 @@ class PreferenceRepository {
       gearOilIntervalMonths: prefs.getInt(_kGearMonths) ?? 24,
       generalServiceIntervalKm: prefs.getInt(_kGeneralKm) ?? 10000,
       generalServiceIntervalMonths: prefs.getInt(_kGeneralMonths) ?? 12,
+      localLanguage: prefs.getString(_kLocalLanguage) ?? 'English',
     );
   }
 
-  // Method to save all preferences.
   Future<void> savePreferences(UserPreferences preferences) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_kCurrency, preferences.defaultCurrency);
@@ -85,16 +122,6 @@ class PreferenceRepository {
     await prefs.setInt(_kGearMonths, preferences.gearOilIntervalMonths);
     await prefs.setInt(_kGeneralKm, preferences.generalServiceIntervalKm);
     await prefs.setInt(_kGeneralMonths, preferences.generalServiceIntervalMonths);
-  }
-
-  // --- Methods for compatibility with your existing CurrencyProvider ---
-  Future<String> getCurrency() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_kCurrency) ?? 'PKR';
-  }
-
-  Future<void> saveCurrency(String currencyCode) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_kCurrency, currencyCode);
+    await prefs.setString(_kLocalLanguage, preferences.localLanguage);
   }
 }

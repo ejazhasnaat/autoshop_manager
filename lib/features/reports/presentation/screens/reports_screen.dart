@@ -2,12 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-
-// Provider Imports - Assuming these paths are correct and providers are available.
 import 'package:autoshop_manager/features/order/presentation/order_providers.dart';
 import 'package:autoshop_manager/features/settings/presentation/settings_providers.dart';
-
-// Widget Imports
 import 'package:autoshop_manager/widgets/common_app_bar.dart';
 
 class ReportsScreen extends ConsumerStatefulWidget {
@@ -32,18 +28,15 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
     super.dispose();
   }
 
-  // Helper method for consistent currency formatting
   String _formatCurrency(double value, String symbol) {
-    // Combines the robust formatting from 'intl' with the dynamic symbol.
     return NumberFormat.currency(
-      locale: 'en_US', // This can be dynamic based on app settings if needed
+      locale: 'en_US',
       symbol: symbol,
     ).format(value);
   }
 
   @override
   Widget build(BuildContext context) {
-    // Watch all necessary providers at the top of the build method.
     final totalSalesAsync = ref.watch(totalSalesProvider);
     final salesByItemAsync = ref.watch(salesByItemReportProvider);
     final salesByCustomerAsync = ref.watch(salesByCustomerReportProvider);
@@ -53,23 +46,13 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      appBar: CommonAppBar(
-        title: 'Sales Reports',
-        showBackButton: true,
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(text: 'By Item', icon: Icon(Icons.inventory_2_outlined)),
-            Tab(text: 'By Customer', icon: Icon(Icons.people_outline)),
-          ],
-        ),
-      ),
+      appBar: const CommonAppBar(title: 'Sales Reports', showBackButton: true),
       body: Column(
         children: [
-          // Merged "Total Sales" card, visible across all tabs.
+          // --- Total Sales Card remains at the top ---
           totalSalesAsync.when(
             data: (totalSales) => Card(
-              margin: const EdgeInsets.all(16.0),
+              margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
               elevation: 4,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               child: Padding(
@@ -81,10 +64,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
                     const SizedBox(height: 8),
                     Text(
                       _formatCurrency(totalSales, currencySymbol),
-                      style: textTheme.displaySmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: colorScheme.primary,
-                      ),
+                      style: textTheme.displaySmall?.copyWith(fontWeight: FontWeight.bold, color: colorScheme.primary),
                     ),
                   ],
                 ),
@@ -99,7 +79,17 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
               child: LinearProgressIndicator(),
             ),
           ),
-          // Expanded TabBarView to fill the remaining space.
+          
+          // --- FIX: TabBar is now part of the screen body ---
+          TabBar(
+            controller: _tabController,
+            tabs: const [
+              Tab(text: 'By Item'),
+              Tab(text: 'By Customer'),
+            ],
+          ),
+
+          // --- FIX: TabBarView is now in an Expanded widget ---
           Expanded(
             child: TabBarView(
               controller: _tabController,
@@ -111,12 +101,12 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
                       return const Center(child: Text('No sales data found for items.'));
                     }
                     return ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      padding: const EdgeInsets.all(16.0),
                       itemCount: reportData.length,
                       itemBuilder: (context, index) {
                         final item = reportData[index];
                         return Card(
-                          margin: const EdgeInsets.symmetric(vertical: 6.0),
+                          margin: const EdgeInsets.symmetric(vertical: 4.0),
                           child: ListTile(
                             title: Text(item.itemName, style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
                             subtitle: Text('Quantity Sold: ${item.totalQuantitySold}'),
@@ -139,12 +129,12 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
                       return const Center(child: Text('No sales data found for customers.'));
                     }
                     return ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      padding: const EdgeInsets.all(16.0),
                       itemCount: reportData.length,
                       itemBuilder: (context, index) {
                         final customer = reportData[index];
                         return Card(
-                          margin: const EdgeInsets.symmetric(vertical: 6.0),
+                          margin: const EdgeInsets.symmetric(vertical: 4.0),
                           child: ListTile(
                             title: Text(customer.customerName, style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
                             subtitle: Text('Total Orders: ${customer.totalOrders}'),

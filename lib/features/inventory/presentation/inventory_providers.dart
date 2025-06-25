@@ -93,7 +93,6 @@ class InventoryNotifier extends StateNotifier<AsyncValue<List<InventoryItem>>> {
     }
   }
 
-  // Method to apply new filters and sorting (called by UI)
   void applyFiltersAndSort({
     String? searchTerm,
     String? make,
@@ -102,7 +101,6 @@ class InventoryNotifier extends StateNotifier<AsyncValue<List<InventoryItem>>> {
     String? sortBy,
     bool? sortAscending,
   }) {
-    // Update the InventoryListFilterStateProvider, which now holds all filter and sort params
     _ref.read(inventoryListFilterStateProvider.notifier).update((state) {
       return state.copyWith(
         make: make,
@@ -113,24 +111,23 @@ class InventoryNotifier extends StateNotifier<AsyncValue<List<InventoryItem>>> {
         sortAscending: sortAscending,
       );
     });
-    // Trigger actual data fetch based on the updated state
+    final currentFilters = _ref.read(inventoryListFilterStateProvider);
     _fetchInventoryItems(
-      searchTerm: searchTerm,
-      vehicleMake: make,
-      vehicleModel: model,
-      vehicleYear: year,
-      sortBy: sortBy,
-      sortAscending: sortAscending ?? _ref.read(inventoryListFilterStateProvider).sortAscending,
+      searchTerm: currentFilters.searchTerm,
+      vehicleMake: currentFilters.make,
+      vehicleModel: currentFilters.model,
+      vehicleYear: currentFilters.year,
+      sortBy: currentFilters.sortBy,
+      sortAscending: currentFilters.sortAscending,
     );
   }
-
 
   Future<bool> addInventoryItem(InventoryItemsCompanion entry) async {
     try {
       await _repository.addInventoryItem(entry);
-      // After adding, re-fetch the list with current filters and sort
+      // --- FIX: Directly refetch the list with current filters ---
       final currentFilters = _ref.read(inventoryListFilterStateProvider);
-      _fetchInventoryItems(
+      await _fetchInventoryItems(
         searchTerm: currentFilters.searchTerm,
         vehicleMake: currentFilters.make,
         vehicleModel: currentFilters.model,
@@ -139,8 +136,9 @@ class InventoryNotifier extends StateNotifier<AsyncValue<List<InventoryItem>>> {
         sortAscending: currentFilters.sortAscending,
       );
       return true;
-    } catch (e) {
-      print('Error adding inventory item: $e');
+    } catch (e, st) {
+      // --- FIX: Propagate error to the UI ---
+      state = AsyncValue.error(e, st);
       return false;
     }
   }
@@ -149,9 +147,9 @@ class InventoryNotifier extends StateNotifier<AsyncValue<List<InventoryItem>>> {
     try {
       final success = await _repository.updateInventoryItem(item);
       if (success) {
-        // After updating, re-fetch the list with current filters and sort
+        // --- FIX: Directly refetch the list with current filters ---
         final currentFilters = _ref.read(inventoryListFilterStateProvider);
-        _fetchInventoryItems(
+        await _fetchInventoryItems(
           searchTerm: currentFilters.searchTerm,
           vehicleMake: currentFilters.make,
           vehicleModel: currentFilters.model,
@@ -161,8 +159,9 @@ class InventoryNotifier extends StateNotifier<AsyncValue<List<InventoryItem>>> {
         );
       }
       return success;
-    } catch (e) {
-      print('Error updating inventory item: $e');
+    } catch (e, st) {
+      // --- FIX: Propagate error to the UI ---
+      state = AsyncValue.error(e, st);
       return false;
     }
   }
@@ -171,9 +170,9 @@ class InventoryNotifier extends StateNotifier<AsyncValue<List<InventoryItem>>> {
     try {
       final success = await _repository.deleteInventoryItem(itemId);
       if (success) {
-        // After deleting, re-fetch the list with current filters and sort
+        // --- FIX: Directly refetch the list with current filters ---
         final currentFilters = _ref.read(inventoryListFilterStateProvider);
-        _fetchInventoryItems(
+        await _fetchInventoryItems(
           searchTerm: currentFilters.searchTerm,
           vehicleMake: currentFilters.make,
           vehicleModel: currentFilters.model,
@@ -183,8 +182,9 @@ class InventoryNotifier extends StateNotifier<AsyncValue<List<InventoryItem>>> {
         );
       }
       return success;
-    } catch (e) {
-      print('Error deleting inventory item: $e');
+    } catch (e, st) {
+      // --- FIX: Propagate error to the UI ---
+      state = AsyncValue.error(e, st);
       return false;
     }
   }

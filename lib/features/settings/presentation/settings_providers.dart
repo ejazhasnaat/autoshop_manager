@@ -3,12 +3,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:autoshop_manager/data/repositories/preference_repository.dart';
 
-// This StreamProvider correctly opens a connection to the repository stream.
-// It will now provide the full UserPreferences object, including service intervals.
 final userPreferencesStreamProvider = StreamProvider<UserPreferences>((ref) {
   final preferenceRepository = ref.watch(preferenceRepositoryProvider);
-  // The repository method was updated to get all preferences, so we use that now.
-  // We'll convert the Future to a Stream for compatibility.
   return Stream.fromFuture(preferenceRepository.getPreferences());
 });
 
@@ -42,7 +38,6 @@ class SettingsNotifier extends StateNotifier<AsyncValue<void>> {
   Future<bool> updateDefaultCurrency(String currencySymbol) async {
     state = const AsyncLoading(); 
     try {
-      // The repository now uses a unified save method, so we need to get current prefs first.
       final currentPrefs = await _preferenceRepository.getPreferences();
       final newPrefs = UserPreferences(
         defaultCurrency: currencySymbol,
@@ -51,7 +46,9 @@ class SettingsNotifier extends StateNotifier<AsyncValue<void>> {
         gearOilIntervalKm: currentPrefs.gearOilIntervalKm,
         gearOilIntervalMonths: currentPrefs.gearOilIntervalMonths,
         generalServiceIntervalKm: currentPrefs.generalServiceIntervalKm,
-        generalServiceIntervalMonths: currentPrefs.generalServiceIntervalMonths
+        generalServiceIntervalMonths: currentPrefs.generalServiceIntervalMonths,
+        // UPDATE: Preserve the existing localLanguage when updating currency.
+        localLanguage: currentPrefs.localLanguage
       );
       await _preferenceRepository.savePreferences(newPrefs);
       state = const AsyncData(null);
@@ -62,7 +59,8 @@ class SettingsNotifier extends StateNotifier<AsyncValue<void>> {
     }
   }
 
-  // --- NEWLY ADDED: Method to save all preference settings at once ---
+  // This method correctly saves the full preferences object.
+  // No changes are needed here.
   Future<bool> savePreferences(UserPreferences preferences) async {
     state = const AsyncLoading();
     try {

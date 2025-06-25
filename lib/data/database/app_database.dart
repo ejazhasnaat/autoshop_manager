@@ -12,17 +12,22 @@ part 'app_database.g.dart';
 @DataClassName('ShopSetting')
 class ShopSettings extends Table {
   IntColumn get id => integer().withDefault(const Constant(1))();
-  TextColumn get workshopName =>
-      text().withDefault(const Constant('Your Workshop'))();
-  TextColumn get workshopAddress =>
-      text().withDefault(const Constant('123 Auto Lane'))();
-  TextColumn get workshopPhoneNumber =>
-      text().withDefault(const Constant('555-123-4567'))();
-  TextColumn get workshopManagerName =>
-      text().withDefault(const Constant('The Manager'))();
-
+  TextColumn get workshopName => text().withDefault(const Constant('Your Workshop'))();
+  TextColumn get workshopAddress => text().withDefault(const Constant('123 Auto Lane'))();
+  TextColumn get workshopPhoneNumber => text().withDefault(const Constant('555-123-4567'))();
+  TextColumn get workshopManagerName => text().withDefault(const Constant('The Manager'))();
   @override
   Set<Column> get primaryKey => {id};
+}
+
+@DataClassName('User')
+class Users extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get username => text().unique()();
+  TextColumn get fullName => text().nullable()();
+  TextColumn get passwordHash => text()();
+  TextColumn get role => text().withDefault(const Constant('User'))();
+  BoolColumn get forcePasswordReset => boolean().withDefault(const Constant(false))();
 }
 
 @DataClassName('MessageTemplate')
@@ -37,8 +42,7 @@ class MessageTemplates extends Table {
 @DataClassName('ServiceHistory')
 class ServiceHistories extends Table {
   IntColumn get id => integer().autoIncrement()();
-  IntColumn get vehicleId =>
-      integer().references(Vehicles, #id, onDelete: KeyAction.cascade)();
+  IntColumn get vehicleId => integer().references(Vehicles, #id, onDelete: KeyAction.cascade)();
   TextColumn get serviceType => text()();
   DateTimeColumn get serviceDate => dateTime()();
   IntColumn get mileage => integer()();
@@ -47,10 +51,8 @@ class ServiceHistories extends Table {
 @DataClassName('Vehicle')
 class Vehicles extends Table {
   IntColumn get id => integer().autoIncrement()();
-  IntColumn get customerId =>
-      integer().references(Customers, #id, onDelete: KeyAction.cascade)();
-  TextColumn get registrationNumber =>
-      text().withLength(min: 1, max: 20).unique()();
+  IntColumn get customerId => integer().references(Customers, #id, onDelete: KeyAction.cascade)();
+  TextColumn get registrationNumber => text().withLength(min: 1, max: 20).unique()();
   TextColumn get make => text().nullable().withLength(max: 50)();
   TextColumn get model => text().nullable().withLength(max: 50)();
   IntColumn get year => integer().nullable()();
@@ -63,25 +65,16 @@ class Vehicles extends Table {
   IntColumn get lastGearOilChangeMileage => integer().nullable()();
   DateTimeColumn get nextReminderDate => dateTime().nullable()();
   TextColumn get nextReminderType => text().nullable()();
-  BoolColumn get isReminderActive =>
-      boolean().withDefault(const Constant(true))();
+  BoolColumn get isReminderActive => boolean().withDefault(const Constant(true))();
   DateTimeColumn get reminderSnoozedUntil => dateTime().nullable()();
 }
 
-@DataClassName('User')
-class Users extends Table {
-  IntColumn get id => integer().autoIncrement().nullable()();
-  TextColumn get username => text().unique()();
-  TextColumn get passwordHash => text()();
-  TextColumn get role => text().withDefault(const Constant('User'))();
-}
 
 @DataClassName('InventoryItem')
 class InventoryItems extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get name => text().withLength(min: 2, max: 100)();
-  TextColumn get partNumber =>
-      text().nullable().unique().withLength(min: 1, max: 50)();
+  TextColumn get partNumber => text().nullable().unique().withLength(min: 1, max: 50)();
   TextColumn get supplier => text().nullable().withLength(max: 100)();
   RealColumn get costPrice => real()();
   RealColumn get salePrice => real()();
@@ -98,8 +91,7 @@ class Customers extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get name => text().withLength(min: 2, max: 100)();
   TextColumn get phoneNumber => text().unique().withLength(min: 11, max: 14)();
-  TextColumn get whatsappNumber =>
-      text().nullable().withLength(min: 11, max: 14)();
+  TextColumn get whatsappNumber => text().nullable().withLength(min: 11, max: 14)();
   TextColumn get email => text().nullable().withLength(max: 100)();
   TextColumn get address => text().nullable().withLength(max: 200)();
 }
@@ -107,8 +99,7 @@ class Customers extends Table {
 @DataClassName('Order')
 class Orders extends Table {
   IntColumn get id => integer().autoIncrement()();
-  IntColumn get customerId =>
-      integer().references(Customers, #id, onDelete: KeyAction.restrict)();
+  IntColumn get customerId => integer().references(Customers, #id, onDelete: KeyAction.restrict)();
   DateTimeColumn get orderDate => dateTime()();
   RealColumn get totalAmount => real().withDefault(const Constant(0.0))();
   TextColumn get status => text().withDefault(const Constant('Pending'))();
@@ -117,10 +108,8 @@ class Orders extends Table {
 @DataClassName('OrderItem')
 class OrderItems extends Table {
   IntColumn get id => integer().autoIncrement()();
-  IntColumn get orderId =>
-      integer().references(Orders, #id, onDelete: KeyAction.cascade)();
-  IntColumn get itemId =>
-      integer().references(InventoryItems, #id, onDelete: KeyAction.restrict)();
+  IntColumn get orderId => integer().references(Orders, #id, onDelete: KeyAction.cascade)();
+  IntColumn get itemId => integer().references(InventoryItems, #id, onDelete: KeyAction.restrict)();
   IntColumn get quantity => integer()();
   RealColumn get priceAtSale => real()();
 }
@@ -128,10 +117,15 @@ class OrderItems extends Table {
 @DataClassName('Service')
 class Services extends Table {
   IntColumn get id => integer().autoIncrement()();
-  TextColumn get name => text().withLength(min: 2, max: 100).unique()();
+  TextColumn get name => text().withLength(min: 2, max: 100)();
   TextColumn get description => text().nullable().withLength(max: 500)();
   RealColumn get price => real()();
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
+  
+  // --- NEW: Column for the service category ---
+  TextColumn get category => text().withDefault(const Constant('Uncategorized'))();
+  // --- NEW: Column for the unique service code (slug) ---
+  TextColumn get serviceCode => text().unique()();
 }
 
 @DataClassName('VehicleModel')
@@ -178,32 +172,26 @@ class VehicleDao extends DatabaseAccessor<AppDatabase> with _$VehicleDaoMixin {
 
 @DriftDatabase(
   tables: [
-    Users,
-    InventoryItems,
-    Customers,
-    Vehicles,
-    Orders,
-    OrderItems,
-    Services,
-    VehicleModels,
-    ServiceHistories,
-    MessageTemplates,
-    ShopSettings,
-  ],
-  daos: [VehicleDao, ServiceHistoryDao],
+    Users, InventoryItems, Customers, Vehicles, Orders, OrderItems,
+    Services, VehicleModels, ServiceHistories, MessageTemplates, ShopSettings
+  ], 
+  daos: [VehicleDao, ServiceHistoryDao]
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
+  // --- INCREMENTED schema version from 12 to 13 ---
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 13;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (Migrator m) async {
       await m.createAll();
+      await into(shopSettings).insert(const ShopSettingsCompanion());
     },
     onUpgrade: (Migrator m, int from, int to) async {
+      // Keep all old migrations
       if (from < 9) {
         await m.createTable(messageTemplates);
         await m.addColumn(vehicles, vehicles.isReminderActive);
@@ -212,13 +200,24 @@ class AppDatabase extends _$AppDatabase {
       if (from < 10) {
         await m.createTable(shopSettings);
       }
+      if (from < 11) {
+        await m.addColumn(users, users.forcePasswordReset);
+      }
+      if (from < 12) {
+        await m.addColumn(users, users.fullName);
+      }
+      // --- NEW: Migration for version 13 ---
+      if (from < 13) {
+        // Note: Removing the 'unique' constraint from 'services.name' is not directly
+        // supported in a simple migration. A full table rebuild would be needed.
+        // For development, a fresh install or manual data adjustment is safest.
+        // This migration will only add the new columns.
+        await m.addColumn(services, services.category);
+        await m.addColumn(services, services.serviceCode);
+      }
     },
-    // --- FIX: Use the correct `beforeOpen` callback to seed data ---
     beforeOpen: (details) async {
-      // This runs after migrations, but before the database is ready for use.
       if (details.wasCreated) {
-        // If the database was just created, seed it with a default settings row.
-        // We can access the `into` method from `this` AppDatabase instance.
         await into(shopSettings).insert(const ShopSettingsCompanion());
       }
     },

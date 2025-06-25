@@ -2,56 +2,111 @@
   {
     "templateType": "oil_change_due",
     "title": "Engine Oil Change Reminder",
-    "content": "Hi [CustomerName], a friendly reminder for the next oil change for your [VehicleModel] ([VehicleRegistration]).\n\nIt is due at [NextServiceMileage] km.\n\nDetails:\nLast Oil Change Date: [LastServiceDate]\nLast Mileage: [LastServiceMileage] km\n\nVisit us at [WorkshopName], [WorkshopAddress].\n\nContact us at [WorkshopPhoneNumber].\n\nThanks,\n[WorkshopManagerName]"
+    "content": "Dear [CustomerName],\nOil change due at [NextServiceMileage] km for your [VehicleModel] ([VehicleRegistration]).\nLast Oil Chnage: [LastServiceDate], [LastServiceMileage] km\nVisit: [WorkshopName], [WorkshopAddress]\nCall: [WorkshopPhoneNumber]\nThanks,\n[WorkshopManagerName]"
   },
   {
     "templateType": "general_service_due",
     "title": "General Service Reminder",
-    "content": "Hi [CustomerName], a friendly reminder from [WorkshopName] that your [VehicleModel] ([VehicleRegistration]) is due for its periodic maintenance to keep it running smoothly and safely.\n\nDetails:\nLast Service: [LastServiceDate]\nLast Mileage: [LastServiceMileage] km\n\nTo book your appointment, please contact us at [WorkshopPhoneNumber]. We are located at [WorkshopAddress].\n\nThanks,\n[WorkshopManagerName]"
+    "content": "Dear [CustomerName],\n[VehicleModel] ([VehicleRegistration]) is due for service.\nLast Service: [LastServiceDate], [LastServiceMileage] km\nVisit: [WorkshopName], [WorkshopAddress]\nCall: [WorkshopPhoneNumber]\nThanks,\n[WorkshopManagerName]"
   },
   {
     "templateType": "brake_service_due",
     "title": "Brake Inspection Reminder",
-    "content": "Hi [CustomerName], for your safety, we recommend a brake inspection for your [VehicleModel] ([VehicleRegistration]).\n\nProper brake maintenance is crucial for safety on the road.\n\nContact us at [WorkshopPhoneNumber] to schedule a visit to [WorkshopName] at [WorkshopAddress].\n\nThanks,\n[WorkshopManagerName]"
+    "content": "Dear [CustomerName],\nBrake check recommended for [VehicleModel] ([VehicleRegistration]).\nVisit: [WorkshopName], [WorkshopAddress]\nCall: [WorkshopPhoneNumber]\nThanks,\n[WorkshopManagerName]"
   },
   {
     "templateType": "post_service_follow_up",
     "title": "Post-Service Follow-Up",
-    "content": "Hi [CustomerName], it's [WorkshopManagerName] from [WorkshopName] checking in!\n\nWe hope your [VehicleModel] ([VehicleRegistration]) is running smoothly after its recent service with us. If you have any questions or feedback, please let us know at [WorkshopPhoneNumber].\n\nWe appreciate your business!"
+    "content": "Dear [CustomerName],\nHope your [VehicleModel] ([VehicleRegistration]) is running well after service.\nQuestions? Call [WorkshopPhoneNumber]\nThanks,\n[WorkshopManagerName] from [WorkshopName]"
   },
   {
     "templateType": "battery_check_due",
     "title": "Battery Check Reminder",
-    "content": "Hi [CustomerName], your [VehicleModel] ([VehicleRegistration]) may be due for a battery check or replacement.\n\nWeak batteries can cause starting issues. Stop by [WorkshopName] at [WorkshopAddress] or call [WorkshopPhoneNumber] to schedule a test.\n\nThanks,\n[WorkshopManagerName]"
+    "content": "Dear [CustomerName],\n[VehicleModel] ([VehicleRegistration]) may need a battery check.\nVisit: [WorkshopName], [WorkshopAddress]\nCall: [WorkshopPhoneNumber]\nThanks,\n[WorkshopManagerName]"
   },
   {
     "templateType": "tire_rotation_due",
     "title": "Tire Rotation Reminder",
-    "content": "Hi [CustomerName], it's time to rotate the tires on your [VehicleModel] ([VehicleRegistration]) to ensure even wear and extend tire life.\n\nRecommended every 10,000 km or 6 months.\n\nCall us at [WorkshopPhoneNumber] to book your visit at [WorkshopName], [WorkshopAddress].\n\nThanks,\n[WorkshopManagerName]"
+    "content": "Dear [CustomerName],\nTime to rotate tires on [VehicleModel] ([VehicleRegistration]).\nEvery 10,000 km or 6 months.\nVisit: [WorkshopName], [WorkshopAddress]\nCall: [WorkshopPhoneNumber]\nThanks,\n[WorkshopManagerName]"
   },
   {
     "templateType": "ac_service_due",
     "title": "AC Service Reminder",
-    "content": "Hi [CustomerName], stay cool and comfortable! It's time to check the AC system of your [VehicleModel] ([VehicleRegistration]).\n\nWe recommend servicing the AC system before the summer peak.\n\nCall [WorkshopPhoneNumber] to book a service at [WorkshopName], [WorkshopAddress].\n\nThanks,\n[WorkshopManagerName]"
+    "content": "Dear [CustomerName],\nTime to service AC of [VehicleModel] ([VehicleRegistration]).\nVisit: [WorkshopName], [WorkshopAddress]\nCall: [WorkshopPhoneNumber]\nThanks,\n[WorkshopManagerName]"
   },
   {
     "templateType": "wheel_alignment_due",
     "title": "Wheel Alignment Reminder",
-    "content": "Hi [CustomerName], your [VehicleModel] ([VehicleRegistration]) may be due for a wheel alignment.\n\nProper alignment improves handling and extends tire life.\n\nContact us at [WorkshopPhoneNumber] or visit [WorkshopName] at [WorkshopAddress] to schedule.\n\nThanks,\n[WorkshopManagerName]"
+    "content": "Dear [CustomerName],\n[VehicleModel] ([VehicleRegistration]) may need wheel alignment.\nVisit: [WorkshopName], [WorkshopAddress]\nCall: [WorkshopPhoneNumber]\nThanks,\n[WorkshopManagerName]"
   },
   {
     "templateType": "annual_inspection_due",
     "title": "Annual Vehicle Inspection Reminder",
-    "content": "Hi [CustomerName], your [VehicleModel] ([VehicleRegistration]) is due for its annual inspection to ensure it meets road safety standards.\n\nSchedule your inspection at [WorkshopName], [WorkshopAddress]. Call us at [WorkshopPhoneNumber] to confirm.\n\nThanks,\n[WorkshopManagerName]"
+    "content": "Dear [CustomerName],\n[VehicleModel] ([VehicleRegistration]) is due for annual inspection.\nVisit: [WorkshopName], [WorkshopAddress]\nCall: [WorkshopPhoneNumber]\nThanks,\n[WorkshopManagerName]"
   },
   {
     "templateType": "coolant_check_due",
     "title": "Coolant & Radiator Check Reminder",
-    "content": "Hi [CustomerName], it's time to check the coolant and radiator system of your [VehicleModel] ([VehicleRegistration]).\n\nAvoid overheating by visiting [WorkshopName] at [WorkshopAddress]. Book your check-up today at [WorkshopPhoneNumber].\n\nThanks,\n[WorkshopManagerName]"
+    "content": "Dear [CustomerName],\nCoolant/radiator check due for [VehicleModel] ([VehicleRegistration]).\nVisit: [WorkshopName], [WorkshopAddress]\nCall: [WorkshopPhoneNumber]\nThanks,\n[WorkshopManagerName]"
   },
   {
     "templateType": "gear_oil_change_due",
     "title": "Gear Oil Change Reminder",
-    "content": "Hi [CustomerName], it's time to change the gear oil of your [VehicleModel] ([VehicleRegistration]).\n\nTimely gear oil replacement ensures smooth shifting and prevents transmission wear.\n\nLast Gear Oil Change: [LastServiceDate] at [LastServiceMileage] km\n\nVisit [WorkshopName] at [WorkshopAddress] or call [WorkshopPhoneNumber] to book your service.\n\nThanks,\n[WorkshopManagerName]"
+    "content": "Dear [CustomerName],\nGear oil change due for [VehicleModel] ([VehicleRegistration]).\nLast Oil Chnage: [LastServiceDate], [LastServiceMileage] km\nVisit: [WorkshopName], [WorkshopAddress]\nCall: [WorkshopPhoneNumber]\nThanks,\n[WorkshopManagerName]"
+  },
+  {
+    "templateType": "oil_change_due_urdu",
+    "title": "Engine Oil Change Reminder - Urdu",
+    "content": "[CustomerName] محترم\nآئل چینج متوقع ہے [NextServiceMileage] کلومیٹر پر ([VehicleRegistration]) [VehicleModel] آپ کی گاڑی\nکلومیٹر [LastServiceMileage]، [LastServiceDate] :آخری سروس\n[WorkshopAddress]، [WorkshopName] : وزٹ کریں\n[WorkshopPhoneNumber] : فون نمبر\n[WorkshopManagerName] : شکریہ"
+  },
+  {
+    "templateType": "general_service_due_urdu",
+    "title": "General Service Reminder - Urdu",
+    "content": "[CustomerName] محترم\n([VehicleRegistration]) [VehicleModel] آپ کی گاڑی کی جنرل سروس متوقع ہے - [WorkshopName] کی طرف سے یاد دہانی\nکلومیٹر [LastServiceMileage]، [LastServiceDate] :آخری سروس\n[WorkshopAddress]، [WorkshopName] : وزٹ کریں\n:اپوائنٹمنٹ کے لیے کال کریں [WorkshopPhoneNumber]\n[WorkshopManagerName] : شکریہ"
+  },
+  {
+    "templateType": "brake_service_due_urdu",
+    "title": "Brake Inspection Reminder - Urdu",
+    "content": "[CustomerName] محترم\n([VehicleRegistration]) [VehicleModel] آپ کی گاڑی کے لیے بریک چیک کی سفارش ہے\nسڑک پر حفاظت کے لیے بریک مینٹیننس بہت اہم ہے\n[WorkshopAddress]، [WorkshopName] : وزٹ کریں\n[WorkshopPhoneNumber] : فون نمبر\n[WorkshopManagerName] : شکریہ"
+  },
+  {
+    "templateType": "post_service_follow_up_urdu",
+    "title": "Post-Service Follow-Up - Urdu",
+    "content": "[CustomerName] محترم\n[WorkshopName] سے [WorkshopManagerName] آپ کی گاڑی [VehicleModel] ([VehicleRegistration]) کی حالیہ سروس کے بعد چیک کر رہے ہیں\nاگر کوئی سوال یا فیڈبیک ہو تو رابطہ کریں\n[WorkshopPhoneNumber] : فون نمبر\n[WorkshopManagerName] : شکریہ"
+  },
+  {
+    "templateType": "battery_check_due_urdu",
+    "title": "Battery Check Reminder - Urdu",
+    "content": "[CustomerName] محترم\n([VehicleRegistration]) [VehicleModel] آپ کی گاڑی کے لیے بیٹری چیک یا تبدیلی ضروری ہو سکتی ہے\nکمزور بیٹری اسٹارٹ اپ میں مسئلہ پیدا کر سکتی ہے\n[WorkshopAddress]، [WorkshopName] : وزٹ کریں\n[WorkshopPhoneNumber] : فون نمبر\n[WorkshopManagerName] : شکریہ"
+  },
+  {
+    "templateType": "tire_rotation_due_urdu",
+    "title": "Tire Rotation Reminder - Urdu",
+    "content": "[CustomerName] محترم\n([VehicleRegistration]) [VehicleModel] کے ٹائروں کی روٹیشن کا وقت ہو چکا ہے تاکہ پہناؤ یکساں رہے\nہر 10,000 کلومیٹر یا 6 ماہ بعد تجویز کی جاتی ہے\n[WorkshopAddress]، [WorkshopName] : وزٹ کریں\n[WorkshopPhoneNumber] : فون نمبر\n[WorkshopManagerName] : شکریہ"
+  },
+  {
+    "templateType": "ac_service_due_urdu",
+    "title": "AC Service Reminder - Urdu",
+    "content": "[CustomerName] محترم\n([VehicleRegistration]) [VehicleModel] کی اے سی سروس کا وقت آ چکا ہے - ٹھنڈا اور آرام دہ رہنے کے لیے\nگرمیوں سے پہلے سروس کروانا بہتر ہے\n[WorkshopAddress]، [WorkshopName] : وزٹ کریں\n[WorkshopPhoneNumber] : فون نمبر\n[WorkshopManagerName] : شکریہ"
+  },
+  {
+    "templateType": "wheel_alignment_due_urdu",
+    "title": "Wheel Alignment Reminder - Urdu",
+    "content": "[CustomerName] محترم\n([VehicleRegistration]) [VehicleModel] کی ویل الائنمنٹ متوقع ہے\nصحیح الائنمنٹ سے گاڑی کی ہینڈلنگ بہتر اور ٹائر کی عمر لمبی ہوتی ہے\n[WorkshopAddress]، [WorkshopName] : وزٹ کریں\n[WorkshopPhoneNumber] : فون نمبر\n[WorkshopManagerName] : شکریہ"
+  },
+  {
+    "templateType": "annual_inspection_due_urdu",
+    "title": "Annual Vehicle Inspection Reminder - Urdu",
+    "content": "[CustomerName] محترم\n([VehicleRegistration]) [VehicleModel] آپ کی گاڑی کی سالانہ انسپیکشن کا وقت ہو چکا ہے\nروڈ سیفٹی معیار کے لیے انسپیکشن کروائیں\n[WorkshopAddress]، [WorkshopName] : وزٹ کریں\n[WorkshopPhoneNumber] : فون نمبر\n[WorkshopManagerName] : شکریہ"
+  },
+  {
+    "templateType": "coolant_check_due_urdu",
+    "title": "Coolant & Radiator Check Reminder - Urdu",
+    "content": "[CustomerName] محترم\n([VehicleRegistration]) [VehicleModel] کی کولنٹ اور ریڈی ایٹر سسٹم چیک اپ کی ضرورت ہے\nاوورہیٹنگ سے بچنے کے لیے سروس کروائیں\n[WorkshopAddress]، [WorkshopName] : وزٹ کریں\n[WorkshopPhoneNumber] : فون نمبر\n[WorkshopManagerName] : شکریہ"
+  },
+  {
+    "templateType": "gear_oil_change_due_urdu",
+    "title": "Gear Oil Change Reminder - Urdu",
+    "content": "[CustomerName] محترم\n([VehicleRegistration]) [VehicleModel] کے گیئر آئل کی تبدیلی کا وقت ہو چکا ہے\nوقت پر تبدیلی گیئر کی کارکردگی بہتر کرتی ہے اور خرابی سے بچاتی ہے\nکلومیٹر [LastServiceMileage]، [LastServiceDate] :آخری گیئر آئل تبدیلی\n[WorkshopAddress]، [WorkshopName] : وزٹ کریں\n[WorkshopPhoneNumber] : فون نمبر\n[WorkshopManagerName] : شکریہ"
   }
 ]

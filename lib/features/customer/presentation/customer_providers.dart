@@ -1,8 +1,8 @@
 // lib/features/customer/presentation/customer_providers.dart
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:autoshop_manager/data/database/app_database.dart'; // For Customer and CustomersCompanion
-import 'package:autoshop_manager/data/repositories/customer_repository.dart'; // <--- ADD THIS IMPORT: For CustomerRepository and CustomerWithVehicles
-import 'package:drift/drift.dart'; // For Value (needed for add/update Customer methods if they use Companions directly)
+import 'package:autoshop_manager/data/database/app_database.dart';
+import 'package:autoshop_manager/data/repositories/customer_repository.dart';
+import 'package:drift/drift.dart';
 
 
 // StateNotifierProvider for managing the list of customers with their vehicles
@@ -41,7 +41,7 @@ class CustomerNotifier extends StateNotifier<AsyncValue<List<CustomerWithVehicle
   Future<bool> addCustomer(CustomersCompanion customerEntry, List<VehiclesCompanion> vehicleEntries) async {
     try {
       await _repository.addCustomer(customerEntry, vehicleEntries);
-      await _fetchCustomers(); // Refresh the list
+      await _fetchCustomers();
       return true;
     } catch (e) {
       print('Error adding customer: $e');
@@ -51,10 +51,9 @@ class CustomerNotifier extends StateNotifier<AsyncValue<List<CustomerWithVehicle
 
   Future<bool> updateCustomer(Customer customer) async {
     try {
-      // The repository method will also need this simplification.
       final success = await _repository.updateCustomer(customer);
       if (success) {
-        await _fetchCustomers(); // Refresh the list
+        await _fetchCustomers();
       }
       return success;
     } catch (e) {
@@ -63,31 +62,45 @@ class CustomerNotifier extends StateNotifier<AsyncValue<List<CustomerWithVehicle
     }
   }
 
+  // OPTIMIZATION: Updated deleteCustomer for a more responsive UI.
   Future<bool> deleteCustomer(int id) async {
+    // Keep the current state to revert back to in case of an error.
+    final previousState = state;
     try {
+      // Immediately update the state locally for a snappy UI response.
+      state.whenData((customers) {
+        final updatedList = customers.where((c) => c.customer.id != id).toList();
+        state = AsyncValue.data(updatedList);
+      });
+
+      // Then, call the repository to delete from the database.
       final success = await _repository.deleteCustomer(id);
-      if (success) {
-        await _fetchCustomers(); // Refresh the list
+      
+      // If the database operation fails, revert the state.
+      if (!success) {
+        state = previousState;
+        return false;
       }
-      return success;
+      return true;
     } catch (e) {
       print('Error deleting customer: $e');
+      // Revert state on any exception.
+      state = previousState;
       return false;
     }
   }
-
-  // searchCustomers method is not implemented in the repository, so it's commented out.
-  /*
-  Future<void> searchCustomers(String query) async {
+  
+  // NEW METHOD: Added to support vehicle deletion from the edit customer screen.
+  Future<bool> deleteVehicle(int vehicleId) async {
     try {
-      state = const AsyncValue.loading();
-      // Assuming CustomerRepository has a search method that returns CustomerWithVehicles
-      final customers = await _repository.searchCustomers(query);
-      state = AsyncValue.data(customers);
-    } catch (e, st) {
-      state = AsyncValue.error(e, st);
+      // This relies on a `deleteVehicle` method in your CustomerRepository.
+      final success = await _repository.deleteVehicle(vehicleId);
+      // No need to call _fetchCustomers here, as the screen that calls this
+      // will invalidate the specific customer provider to refresh its vehicle list.
+      return success;
+    } catch (e) {
+      print('Error deleting vehicle: $e');
+      return false;
     }
   }
-  */
 }
-

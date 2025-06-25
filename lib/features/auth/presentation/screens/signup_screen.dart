@@ -1,7 +1,6 @@
 // lib/features/auth/presentation/screens/signup_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:autoshop_manager/data/database/app_database.dart'; 
 import 'package:autoshop_manager/features/auth/presentation/auth_providers.dart';
 import 'package:autoshop_manager/widgets/common_app_bar.dart';
@@ -18,7 +17,6 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   String _selectedRole = 'User'; 
-  bool _isLoading = false;
 
   final List<String> _roles = ['Admin', 'User'];
 
@@ -29,53 +27,40 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     super.dispose();
   }
 
-  Future<void> _signUp() async {
+  Future<void> _addUser() async {
     if (_formKey.currentState?.validate() ?? false) {
-      setState(() {
-        _isLoading = true;
-      });
-
       final username = _usernameController.text;
       final password = _passwordController.text;
 
       final authNotifier = ref.read(authNotifierProvider.notifier);
-      final AuthUser? newUser = await authNotifier.createUser(username, password, role: _selectedRole);
+      // FIX: Changed from createUser to signup, and fixed the type from AuthUser to User
+      final User? newUser = await authNotifier.signup(username, password, _selectedRole);
 
-      setState(() {
-        _isLoading = false;
-      });
-
-      if (newUser != null) {
+      if (mounted && newUser != null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('User signed up successfully!')),
+          const SnackBar(content: Text('User added successfully!')),
         );
+        _formKey.currentState?.reset();
         _usernameController.clear();
         _passwordController.clear();
-        setState(() {
-          _selectedRole = 'User';
-        });
-      } else {
+        setState(() => _selectedRole = 'User');
+      } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Sign up failed. Username might already exist or other error.')),
+          SnackBar(content: Text('Failed to add user: ${ref.read(authNotifierProvider).error ?? 'Unknown error'}')),
         );
       }
     }
   }
 
   Future<void> _deleteUser(int userId) async {
-    setState(() {
-      _isLoading = true;
-    });
+    // FIX: Using the correct deleteUser method
     final success = await ref.read(authNotifierProvider.notifier).deleteUser(userId);
-    setState(() {
-      _isLoading = false;
-    });
 
-    if (success) {
+    if (mounted && success) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('User deleted successfully!')),
       );
-    } else {
+    } else if(mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Failed to delete user.')),
       );
@@ -84,9 +69,10 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final currentUserState = ref.watch(authNotifierProvider);
-    final currentLoggedInUserId = currentUserState.user?.id;
-
+    final authState = ref.watch(authNotifierProvider);
+    final currentLoggedInUserId = authState.user?.id;
+    
+    // FIX: Watching the correct provider for the user list
     final usersAsync = ref.watch(allUsersProvider);
 
     return Scaffold(
@@ -117,27 +103,14 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                       TextFormField(
                         controller: _usernameController,
                         decoration: const InputDecoration(labelText: 'Username'),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter a username';
-                          }
-                          return null;
-                        },
+                        validator: (value) => (value == null || value.isEmpty) ? 'Please enter a username' : null,
                       ),
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _passwordController,
                         decoration: const InputDecoration(labelText: 'Password'),
                         obscureText: true,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter a password';
-                          }
-                          if (value.length < 6) {
-                            return 'Password must be at least 6 characters';
-                          }
-                          return null;
-                        },
+                        validator: (value) => (value == null || value.length < 6) ? 'Password must be at least 6 characters' : null,
                       ),
                       const SizedBox(height: 16),
                       DropdownButtonFormField<String>(
@@ -147,25 +120,18 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                           border: OutlineInputBorder(),
                         ),
                         onChanged: (String? newValue) {
-                          if (newValue != null) {
-                            setState(() {
-                              _selectedRole = newValue;
-                            });
-                          }
+                          if (newValue != null) setState(() => _selectedRole = newValue);
                         },
                         items: _roles.map<DropdownMenuItem<String>>((String role) {
-                          return DropdownMenuItem<String>(
-                            value: role,
-                            child: Text(role),
-                          );
+                          return DropdownMenuItem<String>(value: role, child: Text(role));
                         }).toList(),
                       ),
                       const SizedBox(height: 24),
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: _isLoading ? null : _signUp,
-                          child: _isLoading
+                          onPressed: authState.isLoading ? null : _addUser,
+                          child: authState.isLoading
                               ? const CircularProgressIndicator.adaptive(strokeWidth: 2)
                               : const Text('Add User'),
                         ),
@@ -182,10 +148,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                 data: (users) {
                   if (users.isEmpty) {
                     return Center(
-                      child: Text(
-                        'No users found.',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
+                      child: Text('No users found.', style: Theme.of(context).textTheme.titleMedium),
                     );
                   }
                   return ListView.builder(
@@ -193,21 +156,13 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                     itemBuilder: (context, index) {
                       final user = users[index];
                       return Card(
-                        margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
-                        elevation: 1,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        margin: const EdgeInsets.symmetric(vertical: 4.0),
                         child: ListTile(
-                          title: Text(user.username),
+                          title: Text(user.username, style: const TextStyle(fontWeight: FontWeight.bold)),
                           subtitle: Text('Role: ${user.role}'),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.delete, color: Colors.red),
+                          trailing: (user.id == currentLoggedInUserId) ? null : IconButton(
+                            icon: Icon(Icons.delete_outline, color: Theme.of(context).colorScheme.error),
                             onPressed: () {
-                              if (user.id == currentLoggedInUserId) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Cannot delete currently logged-in user.')),
-                                );
-                                return;
-                              }
                               showDialog(
                                 context: context,
                                 builder: (ctx) => AlertDialog(
@@ -221,9 +176,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                                     ElevatedButton(
                                       onPressed: () {
                                         Navigator.of(ctx).pop();
-                                        _deleteUser(user.id!);
+                                        _deleteUser(user.id);
                                       },
-                                      style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                                      style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
                                       child: const Text('Delete'),
                                     ),
                                   ],

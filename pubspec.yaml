@@ -101,8 +101,10 @@ flutter:
   #   - images/a_dot_ham.jpeg
 
   assets:  
+    - assets/
     - assets/vehicle_models.json
     - assets/reminder_templates.json
+    - assets/repair_services.json
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
