@@ -15,7 +15,7 @@ import 'package:autoshop_manager/features/order/presentation/screens/add_edit_or
 import 'package:autoshop_manager/features/order/presentation/screens/order_detail_screen.dart';
 import 'package:autoshop_manager/features/order/presentation/screens/orders_list_screen.dart';
 import 'package:autoshop_manager/features/repair_job/presentation/screens/add_edit_repair_job_screen.dart';
-// import 'package:autoshop_manager/features/repair_job/presentation/screens/receipt_screen.dart';
+import 'package:autoshop_manager/features/repair_job/presentation/screens/receipt_screen.dart';
 import 'package:autoshop_manager/features/repair_job/presentation/screens/repair_job_list_screen.dart';
 import 'package:autoshop_manager/features/reminders/presentation/screens/add_edit_template_screen.dart';
 import 'package:autoshop_manager/features/reminders/presentation/screens/manage_templates_screen.dart';
@@ -150,7 +150,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(
               path: 'add',
-              // --- FINAL FIX: Removed 'const' because the screen's constructor is no longer constant ---
               builder: (context, state) => AddEditRepairJobScreen()),
           GoRoute(
               path: 'edit/:id',
@@ -158,16 +157,15 @@ final routerProvider = Provider<GoRouter>((ref) {
                 final id = int.tryParse(state.pathParameters['id'] ?? '');
                 return AddEditRepairJobScreen(repairJobId: id);
               },
-            // routes: [
-            //   GoRoute(
-            //     path: 'receipt',
-            //     builder: (context, state) {
-            //       final id = int.tryParse(state.pathParameters['id'] ?? '');
-            //       return ReceiptScreen(repairJobId: id!);
-            //     },
-            //   ),
-            // ]
-          ),
+              routes: [
+                GoRoute(
+                  path: 'receipt',
+                  builder: (context, state) {
+                    final id = int.tryParse(state.pathParameters['id'] ?? '');
+                    return ReceiptScreen(repairJobId: id!);
+                  },
+                ),
+              ]),
         ],
       ),
       GoRoute(

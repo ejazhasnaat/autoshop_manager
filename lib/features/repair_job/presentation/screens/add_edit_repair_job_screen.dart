@@ -72,16 +72,19 @@ class AddEditRepairJobScreen extends ConsumerWidget {
                           _saveAllEdits();
                           await Future.delayed(const Duration(milliseconds: 50));
                           try {
-                            await ref
+                            final completedId = await ref
                                 .read(provider.notifier)
                                 .completeAndBillJob();
                             if (!context.mounted) return;
+                            
+                            // Navigate to the new receipt screen
+                            context.go('/repairs/edit/$completedId/receipt');
+
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                   content: Text('Job Completed!'),
                                   backgroundColor: Colors.green),
                             );
-                            context.pop();
                           } catch (e) {
                             if (!context.mounted) return;
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -180,10 +183,7 @@ class AddEditRepairJobScreen extends ConsumerWidget {
               onPressed: state.selectedVehicle == null || state.status == 'Completed'
                   ? null
                   : () {
-                      // --- FIX: Access the keys directly from the parent build context ---
-                      // This is the robust way to access the keys.
                       (key as GlobalKey<_EditableItemsListState>).currentState?._saveAndExitEditMode();
-                      // --- END FIX ---
                       
                       if (isService) {
                         _showAddServiceDialog(context, ref, currencySymbol);
