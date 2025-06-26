@@ -65,7 +65,10 @@ dependencies:
   # workmanager: ^0.5.2
   shared_preferences: ^2.2.3
   workmanager: ^0.6.0
-  flutter_svg: ^2.2.0
+  freezed_annotation: ^2.4.1 
+  riverpod_annotation: ^2.3.5 # Add this line
+  stream_transform: ^2.1.0    # Add this line
+  equatable: ^2.0.5 # Add this line
 
 dev_dependencies:
   flutter_test:
@@ -80,7 +83,9 @@ dev_dependencies:
 
   # Code Generation for Drift
   drift_dev: ^2.26.1 # Or the latest stable version
-  build_runner: ^2.4.9 # Or the latest stable version
+  build_runner: ^2.4.10 # Or the latest stable version
+  freezed: ^2.5.2
+  riverpod_generator: ^2.4.0 # Add this line
 
   mockito: ^5.4.4 # Or the latest stable version
 

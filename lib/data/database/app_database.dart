@@ -4,10 +4,10 @@ import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
+import 'package:collection/collection.dart';
+import 'package:stream_transform/stream_transform.dart';
 
 part 'app_database.g.dart';
-
-// --- TABLE DEFINITIONS ---
 
 @DataClassName('ShopSetting')
 class ShopSettings extends Table {
@@ -46,6 +46,7 @@ class ServiceHistories extends Table {
   TextColumn get serviceType => text()();
   DateTimeColumn get serviceDate => dateTime()();
   IntColumn get mileage => integer()();
+  IntColumn get repairJobId => integer().nullable().references(RepairJobs, #id, onDelete: KeyAction.setNull)();
 }
 
 @DataClassName('Vehicle')
@@ -121,10 +122,7 @@ class Services extends Table {
   TextColumn get description => text().nullable().withLength(max: 500)();
   RealColumn get price => real()();
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
-  
-  // --- NEW: Column for the service category ---
   TextColumn get category => text().withDefault(const Constant('Uncategorized'))();
-  // --- NEW: Column for the unique service code (slug) ---
   TextColumn get serviceCode => text().unique()();
 }
 
@@ -138,51 +136,169 @@ class VehicleModels extends Table {
   Set<Column> get primaryKey => {make, model};
 }
 
+@DataClassName('RepairJob')
+class RepairJobs extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get vehicleId => integer().references(Vehicles, #id, onDelete: KeyAction.restrict)();
+  DateTimeColumn get creationDate => dateTime()();
+  DateTimeColumn get completionDate => dateTime().nullable()();
+  TextColumn get status => text()();
+  RealColumn get totalAmount => real().withDefault(const Constant(0.0))();
+  TextColumn get notes => text().nullable()();
+}
+
+@DataClassName('RepairJobItem')
+class RepairJobItems extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get repairJobId => integer().references(RepairJobs, #id, onDelete: KeyAction.cascade)();
+  TextColumn get itemType => text()();
+  IntColumn get linkedItemId => integer()();
+  TextColumn get description => text()();
+  IntColumn get quantity => integer()();
+  RealColumn get unitPrice => real()();
+}
+
 @DriftAccessor(tables: [ServiceHistories])
-class ServiceHistoryDao extends DatabaseAccessor<AppDatabase>
-    with _$ServiceHistoryDaoMixin {
+class ServiceHistoryDao extends DatabaseAccessor<AppDatabase> with _$ServiceHistoryDaoMixin {
   ServiceHistoryDao(AppDatabase db) : super(db);
-  Future<void> addServiceHistory(ServiceHistoriesCompanion entry) =>
-      into(serviceHistories).insert(entry);
-  Future<List<ServiceHistory>> getHistoryForVehicle(int vehicleId) =>
-      (select(serviceHistories)
-            ..where((tbl) => tbl.vehicleId.equals(vehicleId))
-            ..orderBy([(t) => OrderingTerm(expression: t.serviceDate)]))
-          .get();
+  Future<void> addServiceHistory(ServiceHistoriesCompanion entry) => into(serviceHistories).insert(entry);
+  Future<List<ServiceHistory>> getHistoryForVehicle(int vehicleId) => (select(serviceHistories)..where((tbl) => tbl.vehicleId.equals(vehicleId))..orderBy([(t) => OrderingTerm(expression: t.serviceDate)])).get();
 }
 
 @DriftAccessor(tables: [Vehicles])
 class VehicleDao extends DatabaseAccessor<AppDatabase> with _$VehicleDaoMixin {
   VehicleDao(AppDatabase db) : super(db);
   Future<List<Vehicle>> getAllVehicles() => select(vehicles).get();
-  Future<Vehicle?> getVehicleById(int id) =>
-      (select(vehicles)..where((v) => v.id.equals(id))).getSingleOrNull();
-  Future<void> insertVehicle(VehiclesCompanion vehicle) =>
-      into(vehicles).insert(vehicle);
-  Future<bool> updateVehicle(Vehicle vehicle) =>
-      update(vehicles).replace(vehicle);
-  Future<List<Vehicle>> getVehiclesForCustomer(int customerId) =>
-      (select(vehicles)..where((v) => v.customerId.equals(customerId))).get();
-  Future<int> deleteVehicle(Vehicle vehicle) =>
-      delete(vehicles).delete(vehicle);
-  Future<Vehicle?> getVehicleByRegNo(String regNo) => (select(
-    vehicles,
-  )..where((v) => v.registrationNumber.equals(regNo))).getSingleOrNull();
+  Future<Vehicle?> getVehicleById(int id) => (select(vehicles)..where((v) => v.id.equals(id))).getSingleOrNull();
+  Future<void> insertVehicle(VehiclesCompanion vehicle) => into(vehicles).insert(vehicle);
+  Future<bool> updateVehicle(Vehicle vehicle) => update(vehicles).replace(vehicle);
+  Future<List<Vehicle>> getVehiclesForCustomer(int customerId) => (select(vehicles)..where((v) => v.customerId.equals(customerId))).get();
+  Future<int> deleteVehicle(Vehicle vehicle) => delete(vehicles).delete(vehicle);
+  Future<Vehicle?> getVehicleByRegNo(String regNo) => (select(vehicles)..where((v) => v.registrationNumber.equals(regNo))).getSingleOrNull();
+}
+
+@DriftAccessor(tables: [RepairJobs, RepairJobItems, Vehicles, Customers, InventoryItems, Services])
+class RepairJobDao extends DatabaseAccessor<AppDatabase> with _$RepairJobDaoMixin {
+  RepairJobDao(AppDatabase db) : super(db);
+
+  Stream<List<RepairJobWithCustomer>> watchActiveJobs() {
+    final query = select(repairJobs)
+      ..where((r) => r.status.equals('Completed').not())
+      ..orderBy([(r) => OrderingTerm(expression: r.creationDate, mode: OrderingMode.desc)]);
+
+    return query.join([
+      innerJoin(vehicles, vehicles.id.equalsExp(repairJobs.vehicleId)),
+      innerJoin(customers, customers.id.equalsExp(vehicles.customerId)),
+    ]).watch().map((rows) {
+      return rows.map((row) {
+        return RepairJobWithCustomer(
+          repairJob: row.readTable(repairJobs),
+          vehicle: row.readTable(vehicles),
+          customer: row.readTable(customers),
+        );
+      }).toList();
+    });
+  }
+  
+  Stream<RepairJobWithDetails> watchJobDetails(int jobId) {
+    final jobStream = (select(repairJobs)..where((r) => r.id.equals(jobId))).watchSingle();
+  
+    return jobStream.switchMap((job) {
+      if (job == null) {
+        return Stream.value(RepairJobWithDetails.empty());
+      }
+
+      final vehicleFuture = (select(vehicles)..where((v) => v.id.equals(job.vehicleId))).getSingle();
+      final customerFuture = vehicleFuture.then((v) => (select(customers)..where((c) => c.id.equals(v.customerId))).getSingle());
+      final itemsStream = (select(repairJobItems)..where((i) => i.repairJobId.equals(jobId))).watch();
+
+      return itemsStream.asyncMap((items) async {
+        final vehicle = await vehicleFuture;
+        final customer = await customerFuture;
+        final grouped = groupBy(items, (RepairJobItem item) => item.itemType);
+        final inventoryItems = grouped['InventoryItem'] ?? [];
+        final serviceItems = grouped['Service'] ?? [];
+        
+        return RepairJobWithDetails(
+          job: job,
+          vehicle: vehicle,
+          customer: customer,
+          inventoryItems: inventoryItems,
+          serviceItems: serviceItems,
+        );
+      });
+    });
+  }
+}
+
+class RepairJobWithCustomer {
+  final RepairJob repairJob;
+  final Vehicle vehicle;
+  final Customer customer;
+  RepairJobWithCustomer({required this.repairJob, required this.vehicle, required this.customer});
+}
+
+class RepairJobWithDetails {
+  final RepairJob job;
+  final Vehicle? vehicle;
+  final Customer? customer;
+  final List<RepairJobItem> inventoryItems;
+  final List<RepairJobItem> serviceItems;
+
+  RepairJobWithDetails({
+    required this.job,
+    required this.vehicle,
+    required this.customer,
+    required this.inventoryItems,
+    required this.serviceItems,
+  });
+
+  factory RepairJobWithDetails.empty() {
+    return RepairJobWithDetails(
+      job: RepairJob(id: -1, vehicleId: -1, creationDate: DateTime.now(), status: '', totalAmount: 0.0),
+      vehicle: null,
+      customer: null,
+      inventoryItems: [],
+      serviceItems: [],
+    );
+  }
+
+  double get total => inventoryItems.fold<double>(0, (sum, item) => sum + (item.unitPrice * item.quantity)) + 
+                     serviceItems.fold<double>(0, (sum, item) => sum + (item.unitPrice * item.quantity));
+}
+
+
+class RepairJobItemWithDetails {
+  final RepairJobItem repairJobItem;
+  final dynamic item;
+  RepairJobItemWithDetails({required this.repairJobItem, required this.item});
 }
 
 @DriftDatabase(
   tables: [
     Users, InventoryItems, Customers, Vehicles, Orders, OrderItems,
-    Services, VehicleModels, ServiceHistories, MessageTemplates, ShopSettings
+    Services, VehicleModels, ServiceHistories, MessageTemplates, ShopSettings,
+    RepairJobs, RepairJobItems
   ], 
-  daos: [VehicleDao, ServiceHistoryDao]
+  daos: [
+    VehicleDao, ServiceHistoryDao, RepairJobDao
+  ]
 )
+// --- FIX: Implement the Singleton Pattern ---
 class AppDatabase extends _$AppDatabase {
-  AppDatabase() : super(_openConnection());
+  // Private constructor
+  AppDatabase._() : super(_openConnection());
 
-  // --- INCREMENTED schema version from 12 to 13 ---
+  // The single, static instance
+  static final AppDatabase _instance = AppDatabase._();
+
+  // The public factory constructor that returns the instance
+  factory AppDatabase() {
+    return _instance;
+  }
+  
   @override
-  int get schemaVersion => 13;
+  int get schemaVersion => 14;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -191,7 +307,6 @@ class AppDatabase extends _$AppDatabase {
       await into(shopSettings).insert(const ShopSettingsCompanion());
     },
     onUpgrade: (Migrator m, int from, int to) async {
-      // Keep all old migrations
       if (from < 9) {
         await m.createTable(messageTemplates);
         await m.addColumn(vehicles, vehicles.isReminderActive);
@@ -206,14 +321,14 @@ class AppDatabase extends _$AppDatabase {
       if (from < 12) {
         await m.addColumn(users, users.fullName);
       }
-      // --- NEW: Migration for version 13 ---
       if (from < 13) {
-        // Note: Removing the 'unique' constraint from 'services.name' is not directly
-        // supported in a simple migration. A full table rebuild would be needed.
-        // For development, a fresh install or manual data adjustment is safest.
-        // This migration will only add the new columns.
         await m.addColumn(services, services.category);
         await m.addColumn(services, services.serviceCode);
+      }
+      if (from < 14) {
+        await m.createTable(repairJobs);
+        await m.createTable(repairJobItems);
+        await m.addColumn(serviceHistories, serviceHistories.repairJobId);
       }
     },
     beforeOpen: (details) async {
@@ -223,6 +338,7 @@ class AppDatabase extends _$AppDatabase {
     },
   );
 }
+// --- END OF SINGLETON FIX ---
 
 LazyDatabase _openConnection() {
   return LazyDatabase(() async {

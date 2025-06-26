@@ -1,16 +1,24 @@
 // lib/data/repositories/customer_repository.dart
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:drift/drift.dart' hide Column;
+import 'package:autoshop_manager/core/providers.dart';
 import 'package:autoshop_manager/data/database/app_database.dart';
-import 'package:autoshop_manager/core/providers.dart'; 
 import 'package:autoshop_manager/data/repositories/vehicle_repository.dart';
+import 'package:drift/drift.dart' hide Column;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+// --- FIX: Import the equatable package ---
+import 'package:equatable/equatable.dart';
 
 // Custom data class to hold Customer and their Vehicles
-class CustomerWithVehicles {
+// --- FIX: Extend Equatable to allow for proper object comparison ---
+class CustomerWithVehicles extends Equatable {
   final Customer customer;
   final List<Vehicle> vehicles;
 
-  CustomerWithVehicles({required this.customer, required this.vehicles});
+  // --- FIX: Added 'const' for performance optimization ---
+  const CustomerWithVehicles({required this.customer, required this.vehicles});
+
+  // --- FIX: This tells Dart to compare two instances by the customer's ID ---
+  @override
+  List<Object?> get props => [customer.id];
 }
 
 final customerRepositoryProvider = Provider<CustomerRepository>((ref) {
@@ -31,7 +39,8 @@ class CustomerRepository {
     final List<CustomerWithVehicles> result = [];
 
     for (final customer in customers) {
-      final vehicles = await _vehicleRepo.getVehiclesByCustomerId(customer.id!);
+      // Assuming customer.id is not null for existing customers
+      final vehicles = await _vehicleRepo.getVehiclesByCustomerId(customer.id);
       result.add(CustomerWithVehicles(customer: customer, vehicles: vehicles));
     }
     return result;
@@ -42,7 +51,7 @@ class CustomerRepository {
     if (customer == null) {
       return null;
     }
-    final vehicles = await _vehicleRepo.getVehiclesByCustomerId(customer.id!);
+    final vehicles = await _vehicleRepo.getVehiclesByCustomerId(customer.id);
     return CustomerWithVehicles(customer: customer, vehicles: vehicles);
   }
 
@@ -68,10 +77,7 @@ class CustomerRepository {
     return count > 0;
   }
 
-  // NEW METHOD: Added to fix the compilation error.
-  // This delegates the vehicle deletion task to the VehicleRepository.
   Future<bool> deleteVehicle(int vehicleId) async {
-    // The actual deletion logic belongs in the VehicleRepository.
     return _vehicleRepo.deleteVehicle(vehicleId);
   }
 }

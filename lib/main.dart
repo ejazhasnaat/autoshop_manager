@@ -19,8 +19,8 @@ import 'package:workmanager/workmanager.dart';
 @pragma('vm:entry-point')
 void callbackDispatcher() {
   Workmanager().executeTask((task, inputData) async {
+    final db = AppDatabase();
     try {
-      final db = AppDatabase();
       final historyDao = ServiceHistoryDao(db);
       final preferenceRepository = PreferenceRepository();
       final preferences = await preferenceRepository.getPreferences();
@@ -28,30 +28,21 @@ void callbackDispatcher() {
       final notificationService = NotificationService();
 
       await notificationService.init();
-
       final vehicles = await db.vehicleDao.getAllVehicles();
-
       for (var vehicle in vehicles) {
         final result = await reminderService.calculateNextReminder(vehicle);
-
         if (result != null) {
           final vehicleToUpdate = vehicle.copyWith(
             nextReminderDate: Value(result.date),
             nextReminderType: Value(result.type),
           );
           await db.vehicleDao.updateVehicle(vehicleToUpdate);
-          
-          if (result.date.isBefore(
-            DateTime.now().add(const Duration(days: 7)),
-          )) {
+          if (result.date.isBefore(DateTime.now().add(const Duration(days: 7)))) {
             final notificationId = vehicle.id + result.type.hashCode;
-
             await notificationService.showNotification(
               id: notificationId,
-              title:
-                  'Service Reminder: ${vehicle.make ?? ''} ${vehicle.model ?? ''}',
-              body:
-                  '${result.type} is due on ${result.date.toLocal().toString().split(' ')[0]}',
+              title: 'Service Reminder: ${vehicle.make ?? ''} ${vehicle.model ?? ''}',
+              body: '${result.type} is due on ${result.date.toLocal().toString().split(' ')[0]}',
             );
           }
         }
@@ -68,33 +59,38 @@ const reminderTask = "com.autoshop_manager.reminderCheck";
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   final prefs = PreferenceRepository();
   final isSetupComplete = await prefs.isSetupComplete();
-
-  final db = AppDatabase();
-  final authRepo = AuthRepository(db);
-  final reminderRepo = ReminderRepository(db);
-  final serviceRepo = ServiceRepository(db);
-
-  final overrides = [
-    appDatabaseProvider.overrideWithValue(db),
-    authRepositoryProvider.overrideWithValue(authRepo),
-    reminderRepositoryProvider.overrideWithValue(reminderRepo),
-    serviceRepositoryProvider.overrideWithValue(serviceRepo),
-    setupCompleteProvider.overrideWith((ref) => isSetupComplete),
-  ];
-
-  final container = ProviderContainer(overrides: overrides);
+  
+  // FINAL FIX: We restore the original ProviderContainer approach
+  // which works for data loading, and fix the navigation issue within it.
+  final container = ProviderContainer(
+    overrides: [
+      // We no longer need to override appDatabaseProvider because its
+      // default implementation is now correct.
+      setupCompleteProvider.overrideWith((ref) => isSetupComplete),
+    ],
+  );
 
   if (isSetupComplete) {
+    // FINAL FIX: We `await` the auto-login check BEFORE running the app.
+    // This solves the navigation race condition permanently.
     await container.read(authNotifierProvider.notifier).tryAutoLogin();
   } else {
-    // Seed the database if this is the first run
     await container.read(reminderRepositoryProvider).seedTemplatesFromJson();
     await container.read(serviceRepositoryProvider).seedServicesFromJson();
+    await prefs.markSetupAsComplete();
   }
 
+  runApp(
+    UncontrolledProviderScope(
+      container: container,
+      child: const MyApp(),
+    ),
+  );
+
+  // Background tasks can be initialized after the app starts.
   await notificationService.init();
   if (Platform.isAndroid || Platform.isIOS) {
     await Workmanager().initialize(
@@ -107,13 +103,6 @@ Future<void> main() async {
       frequency: const Duration(hours: 12),
     );
   }
-
-  runApp(
-    UncontrolledProviderScope(
-      container: container,
-      child: const MyApp(),
-    ),
-  );
 }
 
 class MyApp extends ConsumerWidget {
@@ -121,6 +110,7 @@ class MyApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // The auto-login is no longer needed here.
     final router = ref.watch(routerProvider);
 
     return MaterialApp.router(
@@ -137,6 +127,7 @@ class MyApp extends ConsumerWidget {
         brightness: Brightness.dark,
       ),
       themeMode: ThemeMode.system,
+      debugShowCheckedModeBanner: false,
     );
   }
 }

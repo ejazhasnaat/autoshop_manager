@@ -2,6 +2,8 @@
 import 'package:autoshop_manager/data/database/app_database.dart';
 import 'package:autoshop_manager/features/customer/presentation/customer_providers.dart';
 import 'package:autoshop_manager/features/home/presentation/home_providers.dart';
+// --- FIX: Added import for our new provider ---
+import 'package:autoshop_manager/features/repair_job/presentation/providers/repair_job_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -27,7 +29,6 @@ class HomeScreen extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                // --- UPDATED: Welcome message uses full name ---
                 'Welcome, ${authState.user?.fullName ?? authState.user?.username ?? 'Guest'}!',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.bold,
@@ -58,44 +59,63 @@ class HomeScreen extends ConsumerWidget {
                 runSpacing: 20.0,
                 alignment: WrapAlignment.center,
                 children: [
+                  // --- FIX: START ---
+                  // This button now watches the activeRepairJobCountProvider
+                  // to display a live count of active jobs.
                   _buildFeatureButton(
                     context,
+                    ref: ref,
+                    label: 'Active Repairs',
+                    icon: Icons.build_circle_outlined,
+                    onPressed: () => context.go('/repairs'),
+                    countProvider: activeRepairJobCountProvider,
+                  ),
+                  // --- FIX: END ---
+                  _buildFeatureButton(
+                    context,
+                    ref: ref,
                     label: 'Customers',
                     icon: Icons.people_outline,
                     onPressed: () => context.go('/customers'),
                   ),
                   _buildFeatureButton(
                     context,
+                    ref: ref,
                     label: 'Inventory',
                     icon: Icons.inventory_2_outlined,
                     onPressed: () => context.go('/inventory'),
                   ),
                   _buildFeatureButton(
                     context,
+                    ref: ref,
                     label: 'Orders',
                     icon: Icons.receipt_long_outlined,
                     onPressed: () => context.go('/orders'),
                   ),
                   _buildFeatureButton(
                     context,
+                    ref: ref,
                     label: 'Reminders',
                     icon: Icons.notifications_active_outlined,
                     onPressed: () => context.go('/reminders'),
                   ),
                   _buildFeatureButton(
                     context,
+                    ref: ref,
                     label: 'Repair Services',
                     icon: Icons.design_services_outlined,
                     onPressed: () => context.go('/services'),
                   ),
                   _buildFeatureButton(
                     context,
+                    ref: ref,
                     label: 'Vehicle Models',
                     icon: Icons.directions_car_outlined,
                     onPressed: () => context.go('/vehicle_models'),
                   ),
                   _buildFeatureButton(
                     context,
+                    ref: ref,
                     label: 'Reports',
                     icon: Icons.bar_chart_outlined,
                     onPressed: () => context.go('/reports'),
@@ -123,9 +143,7 @@ class HomeScreen extends ConsumerWidget {
           children: [
             Text(
               'Upcoming Services',
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const Divider(height: 24),
             ListView.separated(
@@ -149,7 +167,29 @@ class HomeScreen extends ConsumerWidget {
     required String label,
     required IconData icon,
     required VoidCallback onPressed,
+    required WidgetRef ref,
+    // --- FIX: Changed the type to accept our StreamProvider ---
+    ProviderBase<AsyncValue<int>>? countProvider,
   }) {
+    final buttonContent = Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(
+          icon,
+          size: 48,
+          color: Theme.of(context).colorScheme.primary,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          label,
+          textAlign: TextAlign.center,
+          style: Theme.of(
+            context,
+          ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+        ),
+      ],
+    );
+
     return SizedBox(
       width: 150,
       height: 120,
@@ -160,22 +200,27 @@ class HomeScreen extends ConsumerWidget {
         child: InkWell(
           onTap: onPressed,
           borderRadius: BorderRadius.circular(16),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+          child: Stack(
             children: [
-              Icon(
-                icon,
-                size: 48,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                label,
-                textAlign: TextAlign.center,
-                style: Theme.of(
-                  context,
-                ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
-              ),
+              Center(child: buttonContent),
+              if (countProvider != null)
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: ref.watch(countProvider).when(
+                        // --- FIX: Show badge only if count > 0 ---
+                        data: (count) => count > 0
+                            ? Badge(
+                                label: Text(count.toString()),
+                              )
+                            : const SizedBox.shrink(),
+                        loading: () => const Padding(
+                          padding: EdgeInsets.all(8.0),
+                          child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+                        ),
+                        error: (e, s) => const Icon(Icons.error_outline, color: Colors.red, size: 20),
+                      ),
+                ),
             ],
           ),
         ),
@@ -233,7 +278,7 @@ class _UpcomingServiceTile extends ConsumerWidget {
         ),
         error: (e, st) => const Icon(Icons.error, color: Colors.red),
       ),
-      onTap: () => context.go('/vehicles/${vehicle.id!}'),
+      onTap: () => context.go('/vehicles/${vehicle.id}'),
     );
   }
 }

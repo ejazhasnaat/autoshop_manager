@@ -79,28 +79,23 @@ class ServiceRepository {
     return select.get();
   }
 
-  /// Retrieves a single service by its ID.
   Future<Service?> getServiceById(int id) async {
     return (_db.select(_db.services)..where((s) => s.id.equals(id))).getSingleOrNull();
   }
 
-  /// Checks if a service with the given service code already exists.
   Future<bool> serviceExists(String serviceCode) async {
     final existing = await (_db.select(_db.services)..where((s) => s.serviceCode.equals(serviceCode))).getSingleOrNull();
     return existing != null;
   }
 
-  /// Adds a new service to the database.
   Future<int> addService(ServicesCompanion entry) async {
     return _db.into(_db.services).insert(entry);
   }
 
-  /// Updates an existing service in the database.
   Future<bool> updateService(Service service) async {
     return _db.update(_db.services).replace(service);
   }
 
-  /// Deletes a service by its ID.
   Future<bool> deleteService(int id) async {
     final count = await (_db.delete(_db.services)..where((s) => s.id.equals(id))).go();
     return count > 0;

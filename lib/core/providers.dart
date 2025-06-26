@@ -2,11 +2,8 @@
 import 'package:autoshop_manager/data/database/app_database.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-// Provides the single instance of the AppDatabase.
-// It now throws an error by default to enforce that it must be overridden
-// in the ProviderScope at the root of the app.
+// FINAL FIX: The provider now returns the singleton instance of the database,
+// making it consistently available throughout the entire app.
 final appDatabaseProvider = Provider<AppDatabase>((ref) {
-  throw UnimplementedError(
-    'appDatabaseProvider must be overridden in main.dart',
-  );
+  return AppDatabase();
 });
