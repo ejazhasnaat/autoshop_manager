@@ -2,6 +2,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+// --- ADDED: Key for the new auto-print setting ---
+const String _kAutoPrint = 'autoPrintReceipt';
 const String _kKeepMeLoggedIn = 'keepMeLoggedIn';
 const String _kSetupComplete = 'setupComplete';
 const String _kAutoLoginUser = 'autoLoginUsername';
@@ -23,6 +25,8 @@ class UserPreferences {
   final int generalServiceIntervalKm;
   final int generalServiceIntervalMonths;
   final String localLanguage;
+  // --- ADDED: New property for auto-printing receipts ---
+  final bool autoPrintReceipt;
 
   UserPreferences({
     this.defaultCurrency = 'PKR',
@@ -32,8 +36,9 @@ class UserPreferences {
     this.gearOilIntervalMonths = 24,
     this.generalServiceIntervalKm = 10000,
     this.generalServiceIntervalMonths = 12,
-    // UPDATE: Set a default value for the new property.
     this.localLanguage = 'English',
+    // --- ADDED: Default value for the new setting ---
+    this.autoPrintReceipt = false,
   });
 
   UserPreferences copyWith({
@@ -45,16 +50,24 @@ class UserPreferences {
     int? generalServiceIntervalKm,
     int? generalServiceIntervalMonths,
     String? localLanguage,
+    // --- ADDED: New setting to the copyWith method ---
+    bool? autoPrintReceipt,
   }) {
     return UserPreferences(
       defaultCurrency: defaultCurrency ?? this.defaultCurrency,
       engineOilIntervalKm: engineOilIntervalKm ?? this.engineOilIntervalKm,
-      engineOilIntervalMonths: engineOilIntervalMonths ?? this.engineOilIntervalMonths,
+      engineOilIntervalMonths:
+          engineOilIntervalMonths ?? this.engineOilIntervalMonths,
       gearOilIntervalKm: gearOilIntervalKm ?? this.gearOilIntervalKm,
-      gearOilIntervalMonths: gearOilIntervalMonths ?? this.gearOilIntervalMonths,
-      generalServiceIntervalKm: generalServiceIntervalKm ?? this.generalServiceIntervalKm,
-      generalServiceIntervalMonths: generalServiceIntervalMonths ?? this.generalServiceIntervalMonths,
+      gearOilIntervalMonths:
+          gearOilIntervalMonths ?? this.gearOilIntervalMonths,
+      generalServiceIntervalKm:
+          generalServiceIntervalKm ?? this.generalServiceIntervalKm,
+      generalServiceIntervalMonths:
+          generalServiceIntervalMonths ?? this.generalServiceIntervalMonths,
       localLanguage: localLanguage ?? this.localLanguage,
+      // --- ADDED: Logic to handle copying the new setting ---
+      autoPrintReceipt: autoPrintReceipt ?? this.autoPrintReceipt,
     );
   }
 }
@@ -64,7 +77,6 @@ final preferenceRepositoryProvider = Provider<PreferenceRepository>((ref) {
 });
 
 class PreferenceRepository {
-  // --- NEW: Methods for "Keep me logged in" ---
   Future<bool> getKeepMeLoggedIn() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool(_kKeepMeLoggedIn) ?? false;
@@ -110,6 +122,8 @@ class PreferenceRepository {
       generalServiceIntervalKm: prefs.getInt(_kGeneralKm) ?? 10000,
       generalServiceIntervalMonths: prefs.getInt(_kGeneralMonths) ?? 12,
       localLanguage: prefs.getString(_kLocalLanguage) ?? 'English',
+      // --- ADDED: Loading the new setting from shared preferences ---
+      autoPrintReceipt: prefs.getBool(_kAutoPrint) ?? false,
     );
   }
 
@@ -121,7 +135,11 @@ class PreferenceRepository {
     await prefs.setInt(_kGearKm, preferences.gearOilIntervalKm);
     await prefs.setInt(_kGearMonths, preferences.gearOilIntervalMonths);
     await prefs.setInt(_kGeneralKm, preferences.generalServiceIntervalKm);
-    await prefs.setInt(_kGeneralMonths, preferences.generalServiceIntervalMonths);
+    await prefs.setInt(
+        _kGeneralMonths, preferences.generalServiceIntervalMonths);
     await prefs.setString(_kLocalLanguage, preferences.localLanguage);
+    // --- ADDED: Saving the new setting to shared preferences ---
+    await prefs.setBool(_kAutoPrint, preferences.autoPrintReceipt);
   }
 }
+

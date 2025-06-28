@@ -12,6 +12,7 @@ import 'package:intl/intl.dart';
 import 'package:printing/printing.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:pdf/pdf.dart';
+import 'package:share_plus/share_plus.dart';
 
 class ReceiptScreen extends ConsumerStatefulWidget {
   final int repairJobId;
@@ -24,8 +25,8 @@ class ReceiptScreen extends ConsumerStatefulWidget {
 class _ReceiptScreenState extends ConsumerState<ReceiptScreen> {
   bool _isProcessing = false;
 
-  Future<void> _createAndDisplayPdf() async {
-    if (_isProcessing) return;
+  Future<File?> _generatePdf() async {
+    if (_isProcessing) return null;
     setState(() { _isProcessing = true; });
 
     try {
@@ -38,16 +39,11 @@ class _ReceiptScreenState extends ConsumerState<ReceiptScreen> {
 
       final pdfService = PdfReceiptService();
       
-      final pdfFile = await pdfService.createReceiptPdf(
+      return await pdfService.createReceiptPdf(
         jobDetails: jobDetails, 
         shopSettings: shopSettings, 
         currencySymbol: currencySymbol,
         font: ttf,
-      );
-      
-      // The printing package handles showing the preview/share sheet
-      await Printing.layoutPdf(
-        onLayout: (PdfPageFormat format) async => pdfFile.readAsBytes(),
       );
 
     } catch(e) {
@@ -56,12 +52,33 @@ class _ReceiptScreenState extends ConsumerState<ReceiptScreen> {
           SnackBar(content: Text('Failed to generate PDF: $e'), backgroundColor: Colors.red),
         );
       }
+      return null;
     } finally {
       if(mounted) {
         setState(() { _isProcessing = false; });
       }
     }
   }
+
+  Future<void> _printPdf() async {
+    final pdfFile = await _generatePdf();
+    if (pdfFile == null || !mounted) return;
+
+    await Printing.layoutPdf(
+      onLayout: (PdfPageFormat format) async => pdfFile.readAsBytes(),
+    );
+  }
+
+  Future<void> _sharePdf() async {
+    final pdfFile = await _generatePdf();
+    if (pdfFile == null || !mounted) return;
+
+    await Share.shareXFiles(
+      [XFile(pdfFile.path, mimeType: 'application/pdf')],
+      subject: 'Receipt for Job #${widget.repairJobId}',
+    );
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -70,7 +87,33 @@ class _ReceiptScreenState extends ConsumerState<ReceiptScreen> {
     final currencySymbol = ref.watch(currentCurrencySymbolProvider);
 
     return Scaffold(
-      appBar: AppBar(title: Text('Receipt - Job #${widget.repairJobId}')),
+      appBar: AppBar(
+        title: Text('Receipt - Job #${widget.repairJobId}'),
+        actions: [
+          _AppBarAction(
+            icon: Icons.share,
+            label: 'Share',
+            onPressed: _isProcessing ? null : _sharePdf,
+          ),
+          Consumer(
+            builder: (context, ref, child) {
+              final prefs = ref.watch(userPreferencesStreamProvider);
+              final showPrint = prefs.value?.autoPrintReceipt ?? false;
+
+              if (!showPrint) {
+                return const SizedBox.shrink();
+              }
+              
+              return _AppBarAction(
+                icon: Icons.print,
+                label: 'Print',
+                onPressed: _isProcessing ? null : _printPdf,
+              );
+            }
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
       body: jobDetailsAsync.when(
         data: (details) {
           if (details.customer == null || details.vehicle == null) {
@@ -112,13 +155,6 @@ class _ReceiptScreenState extends ConsumerState<ReceiptScreen> {
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, s) => Center(child: Text('Error loading receipt: $e')),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _isProcessing ? null : _createAndDisplayPdf,
-        label: _isProcessing ? const Text('Generating...') : const Text('Print / Share'),
-        icon: _isProcessing 
-            ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) 
-            : const Icon(Icons.print_sharp),
       ),
     );
   }
@@ -181,7 +217,7 @@ class _ReceiptScreenState extends ConsumerState<ReceiptScreen> {
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Text('DATE COMPLETED', style: Theme.of(context).textTheme.bodySmall),
-            Text(DateFormat.yMMMd().format(job.completionDate!), style: Theme.of(context).textTheme.bodyLarge),
+            Text(DateFormat('EEEE MMM d, yyyy : hh:mm a').format(job.completionDate!), style: Theme.of(context).textTheme.bodyLarge),
           ],
         ),
       ],
@@ -211,6 +247,7 @@ class _ReceiptScreenState extends ConsumerState<ReceiptScreen> {
       rows: [
         ...details.serviceItems.map((item) => buildRow(item.description, item.quantity, item.unitPrice)),
         ...details.inventoryItems.map((item) => buildRow(item.description, item.quantity, item.unitPrice)),
+        ...details.otherItems.map((item) => buildRow(item.description, item.quantity, item.unitPrice)),
       ],
     );
   }
@@ -253,3 +290,35 @@ class _ReceiptScreenState extends ConsumerState<ReceiptScreen> {
     );
   }
 }
+
+class _AppBarAction extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback? onPressed;
+
+  const _AppBarAction({
+    required this.icon,
+    required this.label,
+    this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 8.0),
+      child: ElevatedButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon),
+        label: Text(label),
+        style: ElevatedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          textStyle: Theme.of(context).textTheme.labelLarge,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(30.0),
+          ),
+        ),
+      ),
+    );
+  }
+}
+

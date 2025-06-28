@@ -16,6 +16,7 @@ import 'package:collection/collection.dart';
 class AddEditRepairJobScreen extends ConsumerWidget {
   final int? repairJobId;
 
+  final _othersListKey = GlobalKey<_EditableItemsListState>();
   final _servicesListKey = GlobalKey<_EditableItemsListState>();
   final _partsListKey = GlobalKey<_EditableItemsListState>();
 
@@ -23,6 +24,7 @@ class AddEditRepairJobScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final othersKey = _othersListKey;
     final servicesKey = _servicesListKey;
     final partsKey = _partsListKey;
 
@@ -32,6 +34,7 @@ class AddEditRepairJobScreen extends ConsumerWidget {
     final preferencesAsync = ref.watch(userPreferencesStreamProvider);
 
     void _saveAllEdits() {
+      othersKey.currentState?._saveAndExitEditMode();
       servicesKey.currentState?._saveAndExitEditMode();
       partsKey.currentState?._saveAndExitEditMode();
       FocusScope.of(context).unfocus();
@@ -40,7 +43,8 @@ class AddEditRepairJobScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.close),
+          icon: const Icon(Icons.save),
+          tooltip: 'Save and Close',
           onPressed: () async {
             _saveAllEdits();
             await Future.delayed(const Duration(milliseconds: 50));
@@ -77,7 +81,6 @@ class AddEditRepairJobScreen extends ConsumerWidget {
                                 .completeAndBillJob();
                             if (!context.mounted) return;
                             
-                            // Navigate to the new receipt screen
                             context.go('/repairs/edit/$completedId/receipt');
 
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -126,6 +129,8 @@ class AddEditRepairJobScreen extends ConsumerWidget {
                               const SizedBox(height: 24),
                               _buildItemsSection(context, ref, 'Parts', partsKey, currencySymbol),
                               const SizedBox(height: 24),
+                              _buildItemsSection(context, ref, 'Others', othersKey, currencySymbol),
+                              const SizedBox(height: 24),
                               Align(
                                 alignment: Alignment.centerRight,
                                 child: Padding(
@@ -156,12 +161,21 @@ class AddEditRepairJobScreen extends ConsumerWidget {
 
   Widget _buildItemsSection(BuildContext context, WidgetRef ref, String title, Key key, String currencySymbol) {
     final state = ref.watch(addEditRepairJobNotifierProvider(repairJobId));
-    final isService = title == 'Services';
-    final items = isService
-        ? state.items.where((i) => i.itemType == 'Service').toList()
-        : state.items.where((i) => i.itemType == 'InventoryItem').toList();
+    final bool isService = title == 'Services';
+    final bool isPart = title == 'Parts';
+    final bool isOther = title == 'Others';
+
+    final items = state.items.where((i) {
+      if(isService) return i.itemType == 'Service';
+      if(isPart) return i.itemType == 'InventoryItem';
+      if(isOther) return i.itemType == 'Other';
+      return false;
+    }).toList();
     
-    final subTotal = isService ? state.servicesTotalCost : state.partsTotalCost;
+    final double subTotal;
+    if(isService) subTotal = state.servicesTotalCost;
+    else if(isPart) subTotal = state.partsTotalCost;
+    else subTotal = state.othersTotalCost;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -179,7 +193,7 @@ class AddEditRepairJobScreen extends ConsumerWidget {
             ),
             ElevatedButton.icon(
               icon: const Icon(Icons.add),
-              label: Text(isService ? 'Add Service' : 'Add Part'),
+              label: Text(isService ? 'Add Service' : (isPart ? 'Add Part' : 'Add Other')),
               onPressed: state.selectedVehicle == null || state.status == 'Completed'
                   ? null
                   : () {
@@ -187,8 +201,10 @@ class AddEditRepairJobScreen extends ConsumerWidget {
                       
                       if (isService) {
                         _showAddServiceDialog(context, ref, currencySymbol);
-                      } else {
+                      } else if (isPart) {
                         _showAddPartDialog(context, ref);
+                      } else {
+                        _showAddOtherDialog(context, ref);
                       }
                     },
             ),
@@ -217,6 +233,75 @@ class AddEditRepairJobScreen extends ConsumerWidget {
         )
       ],
     );
+  }
+
+  void _showAddOtherDialog(BuildContext context, WidgetRef ref) {
+    final formKey = GlobalKey<FormState>();
+    final descriptionController = TextEditingController();
+    final qtyController = TextEditingController(text: '1');
+    final priceController = TextEditingController();
+
+    showDialog(
+        context: context,
+        builder: (dialogContext) {
+          return AlertDialog(
+            title: const Text('Add Other Item or Charge'),
+            content: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: descriptionController,
+                    autofocus: true,
+                    decoration: const InputDecoration(labelText: 'Description'),
+                    validator: (value) => (value == null || value.isEmpty)
+                        ? 'Please enter a description'
+                        : null,
+                  ),
+                  TextFormField(
+                    controller: qtyController,
+                    decoration: const InputDecoration(labelText: 'Quantity'),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                     validator: (value) => (value == null || value.isEmpty || int.tryParse(value) == 0)
+                        ? 'Enter a valid quantity'
+                        : null,
+                  ),
+                  TextFormField(
+                    controller: priceController,
+                    decoration: const InputDecoration(labelText: 'Unit Price'),
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    validator: (value) => (value == null || value.isEmpty || double.tryParse(value) == null)
+                        ? 'Enter a valid price'
+                        : null,
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text('Cancel')),
+              ElevatedButton(
+                onPressed: () {
+                  if (formKey.currentState!.validate()) {
+                    ref
+                        .read(addEditRepairJobNotifierProvider(repairJobId)
+                            .notifier)
+                        .addOtherItem(
+                          description: descriptionController.text,
+                          quantity: int.parse(qtyController.text),
+                          price: double.parse(priceController.text),
+                        );
+                    Navigator.of(dialogContext).pop();
+                  }
+                },
+                child: const Text('Add'),
+              ),
+            ],
+          );
+        });
   }
 
   void _showDuplicateItemDialog({
@@ -361,10 +446,27 @@ class AddEditRepairJobScreen extends ConsumerWidget {
   void _showAddPartDialog(BuildContext context, WidgetRef ref) {
     showDialog(
       context: context,
-      builder: (context) => Consumer(
-        builder: (context, ref, _) {
+      builder: (dialogContext) => Consumer(
+        builder: (consumerContext, ref, _) {
           final inventoryAsync = ref.watch(inventoryNotifierProvider);
           final notifier = ref.read(addEditRepairJobNotifierProvider(repairJobId).notifier);
+
+          void attemptToAddItem(InventoryItem item, int quantity) {
+            final success = notifier.addInventoryItem(item, quantity);
+            
+            if (consumerContext.mounted) {
+              Navigator.of(consumerContext).pop();
+            }
+
+            if (!success && context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Failed to add part: Not enough items in stock.'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          }
 
           return AlertDialog(
             title: const Text('Add Part from Inventory'),
@@ -409,20 +511,18 @@ class AddEditRepairJobScreen extends ConsumerWidget {
 
                                 if (existingItem != null) {
                                   _showDuplicateItemDialog(
-                                    context: context,
+                                    context: consumerContext,
                                     itemName: item.name,
                                     onIncrement: () {
                                       notifier.incrementItemQuantity(existingItem);
-                                      Navigator.of(context).pop();
+                                      Navigator.of(consumerContext).pop();
                                     },
                                     onAddNew: () {
-                                      notifier.addInventoryItem(item, 1);
-                                      Navigator.of(context).pop();
+                                      attemptToAddItem(item, 1);
                                     },
                                   );
                                 } else {
-                                  notifier.addInventoryItem(item, 1);
-                                  Navigator.of(context).pop();
+                                  attemptToAddItem(item, 1);
                                 }
                               },
                             );
@@ -437,7 +537,7 @@ class AddEditRepairJobScreen extends ConsumerWidget {
               ),
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel'))
+              TextButton(onPressed: () => Navigator.of(consumerContext).pop(), child: const Text('Cancel'))
             ],
           );
         },
@@ -588,6 +688,25 @@ class AddEditRepairJobScreen extends ConsumerWidget {
   }
 }
 
+// --- ADDED: A helper class to group the controllers for a single item ---
+class _ItemControllers {
+  final TextEditingController description;
+  final TextEditingController quantity;
+  final TextEditingController price;
+
+  _ItemControllers({required String text, required String qty, required String cost})
+      : description = TextEditingController(text: text),
+        quantity = TextEditingController(text: qty),
+        price = TextEditingController(text: cost);
+
+  void dispose() {
+    description.dispose();
+    quantity.dispose();
+    price.dispose();
+  }
+}
+
+
 class _EditableItemsList extends ConsumerStatefulWidget {
   final List<RepairJobItem> items;
   final int? jobId;
@@ -605,8 +724,8 @@ class _EditableItemsList extends ConsumerStatefulWidget {
 }
 
 class _EditableItemsListState extends ConsumerState<_EditableItemsList> {
-  late Map<RepairJobItem, TextEditingController> _qtyControllers;
-  late Map<RepairJobItem, TextEditingController> _priceControllers;
+  // --- UPDATED: A single map holds the controller group for each item ---
+  late Map<RepairJobItem, _ItemControllers> _controllers;
   RepairJobItem? _editingItem;
 
   @override
@@ -616,56 +735,58 @@ class _EditableItemsListState extends ConsumerState<_EditableItemsList> {
   }
 
   void _initializeControllers(List<RepairJobItem> items) {
-    _qtyControllers = {
+    _controllers = {
       for (var item in items)
-        item: TextEditingController(text: item.quantity.toString()),
-    };
-    _priceControllers = {
-      for (var item in items)
-        item: TextEditingController(text: item.unitPrice.toStringAsFixed(2)),
+        item: _ItemControllers(
+          text: item.description,
+          qty: item.quantity.toString(),
+          cost: item.unitPrice.toStringAsFixed(2),
+        ),
     };
   }
-
+  
+  // --- UPDATED: Simplified and more robust lifecycle management ---
   @override
   void didUpdateWidget(_EditableItemsList oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!const DeepCollectionEquality().equals(widget.items, oldWidget.items)) {
-      final oldItems = oldWidget.items.toSet();
-      final newItems = widget.items.toSet();
-      final removedItems = oldItems.difference(newItems);
-      for (var item in removedItems) {
-        _qtyControllers[item]?.dispose();
-        _priceControllers[item]?.dispose();
+      // Dispose all old controllers that are no longer in the list
+      final oldKeys = oldWidget.items.toSet();
+      final newKeys = widget.items.toSet();
+      final removedKeys = oldKeys.difference(newKeys);
+      for (final key in removedKeys) {
+        _controllers[key]?.dispose();
       }
-      
-      if (_editingItem != null && !newItems.contains(_editingItem)) {
+      // Re-initialize the controllers map for the new list of items
+      _initializeControllers(widget.items);
+
+      if (_editingItem != null && !newKeys.contains(_editingItem)) {
         _editingItem = null;
       }
-      _initializeControllers(widget.items);
     }
   }
 
   @override
   void dispose() {
-    for (var controller in _qtyControllers.values) {
-      controller.dispose();
-    }
-    for (var controller in _priceControllers.values) {
-      controller.dispose();
+    for (var controllerGroup in _controllers.values) {
+      controllerGroup.dispose();
     }
     super.dispose();
   }
   
   void _saveAndExitEditMode() {
     if (_editingItem != null) {
-      final newQty = int.tryParse(_qtyControllers[_editingItem]!.text) ?? _editingItem!.quantity;
-      final newPrice = double.tryParse(_priceControllers[_editingItem]!.text) ?? _editingItem!.unitPrice;
+      final controllers = _controllers[_editingItem]!;
+      final newQty = int.tryParse(controllers.quantity.text) ?? _editingItem!.quantity;
+      final newPrice = double.tryParse(controllers.price.text) ?? _editingItem!.unitPrice;
+      final newDesc = controllers.description.text;
       
-      if (newQty != _editingItem!.quantity || newPrice != _editingItem!.unitPrice) {
+      if (newQty != _editingItem!.quantity || newPrice != _editingItem!.unitPrice || newDesc != _editingItem!.description) {
         ref.read(addEditRepairJobNotifierProvider(widget.jobId).notifier).updateItem(
           _editingItem!,
           newQuantity: newQty,
           newPrice: newPrice,
+          newDescription: newDesc,
         );
       }
       if (mounted) {
@@ -716,6 +837,7 @@ class _EditableItemsListState extends ConsumerState<_EditableItemsList> {
       itemBuilder: (context, index) {
         final item = widget.items[index];
         final isEditing = _editingItem == item;
+        final itemControllers = _controllers[item]!;
         
         return InkWell(
           onTap: () {
@@ -729,19 +851,31 @@ class _EditableItemsListState extends ConsumerState<_EditableItemsList> {
             padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
             child: Row(
               children: [
-                Expanded(child: Text(item.description, style: textTheme.bodyLarge)),
-                const SizedBox(width: 8),
+                if (isEditing && item.itemType == 'Other')
+                  Expanded(
+                    flex: 3, // Give more space to the description
+                    child: TextField(
+                      controller: itemControllers.description,
+                      autofocus: true,
+                      decoration: const InputDecoration(isDense: true, hintText: 'Description'),
+                      style: textTheme.bodyLarge,
+                      onSubmitted: (_) => _saveAndExitEditMode(),
+                    ),
+                  )
+                else
+                  Expanded(flex: 3, child: Text(item.description, style: textTheme.bodyLarge, overflow: TextOverflow.ellipsis,)),
+                const SizedBox(width: 16),
                 
                 isEditing
                     ? Row(
                         children: [
-                          Text("Qty: ", style: textTheme.bodyLarge),
+                          Text("Qty: ", style: textTheme.bodySmall),
                           SizedBox(
-                            width: 60,
+                            width: 50,
                             child: TextField(
-                              controller: _qtyControllers[item]!,
-                              textAlign: TextAlign.left,
-                              autofocus: true,
+                              controller: itemControllers.quantity,
+                              textAlign: TextAlign.center,
+                              autofocus: item.itemType != 'Other',
                               keyboardType: TextInputType.number,
                               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                               decoration: const InputDecoration(isDense: true),
@@ -758,12 +892,12 @@ class _EditableItemsListState extends ConsumerState<_EditableItemsList> {
                 isEditing
                     ? Row(
                         children: [
-                          Text("Price (${widget.currencySymbol}): ", style: textTheme.bodyLarge),
+                          Text("Price: ", style: textTheme.bodySmall),
                           SizedBox(
-                            width: 120,
+                            width: 70,
                             child: TextField(
-                              controller: _priceControllers[item]!,
-                              textAlign: TextAlign.left,
+                              controller: itemControllers.price,
+                              textAlign: TextAlign.center,
                               keyboardType: const TextInputType.numberWithOptions(decimal: true),
                               decoration: const InputDecoration(isDense: true),
                               style: textTheme.bodyLarge,
@@ -772,7 +906,7 @@ class _EditableItemsListState extends ConsumerState<_EditableItemsList> {
                           ),
                         ],
                       )
-                    : Text("Price (${widget.currencySymbol}): ${NumberFormat.decimalPattern().format(item.unitPrice)}", style: textTheme.bodyLarge),
+                    : Text("Price: ${NumberFormat.decimalPattern().format(item.unitPrice)}", style: textTheme.bodyLarge),
                 
                 const Spacer(),
 
@@ -788,3 +922,4 @@ class _EditableItemsListState extends ConsumerState<_EditableItemsList> {
     );
   }
 }
+

@@ -104,8 +104,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
     if (currentSortState.sortBy == column) {
       newSortAscending = !currentSortState.sortAscending;
     }
-    // We only need to set the sort state here.
-    // The applyFiltersAndSort method will read from the state provider.
+    
     ref.read(inventoryListFilterStateProvider.notifier).update(
           (state) => state.copyWith(sortBy: column, sortAscending: newSortAscending),
     );
@@ -130,103 +129,111 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
     visibleColumnProperties = _getVisibleColumnProperties();
 
     return Scaffold(
-      appBar: CommonAppBar(
+      appBar: const CommonAppBar(
         title: 'Inventory',
-        customActions: [
-          IconButton(
-            icon: Icon(
-              _showFilterOptions ? Icons.filter_alt_off : Icons.filter_alt,
-            ),
-            onPressed: () {
-              setState(() {
-                _showFilterOptions = !_showFilterOptions;
-              });
-            },
-            tooltip: 'Toggle Filters',
-          ),
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.view_column),
-            onSelected: (String columnKey) {
-              setState(() {
-                if (columnKey == 'name' ||
-                    columnKey == 'quantity' ||
-                    columnKey == 'salePrice') {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'Cannot hide essential columns (Name, Quantity, Sale Price).',
-                      ),
-                    ),
-                  );
-                  return;
-                }
-                if (_visibleColumns.contains(columnKey)) {
-                  _visibleColumns.remove(columnKey);
-                } else {
-                  _visibleColumns.add(columnKey);
-                }
-              });
-            },
-            itemBuilder: (BuildContext context) {
-              return _allColumnProperties.entries.map((entry) {
-                final columnKey = entry.key;
-                final columnLabel = entry.value.label;
-                final isCoreColumn =
-                    columnKey == 'name' ||
-                    columnKey == 'quantity' ||
-                    columnKey == 'salePrice';
-                return CheckedPopupMenuItem<String>(
-                  value: columnKey,
-                  checked: _visibleColumns.contains(columnKey),
-                  enabled: !isCoreColumn,
-                  child: Text(columnLabel),
-                );
-              }).toList();
-            },
-            tooltip: 'Manage Columns',
-          ),
-        ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => context.go('/inventory/add'),
-        tooltip: 'Add New Inventory Item',
-        child: const Icon(Icons.add),
-      ),
+      // --- REMOVED: Old FloatingActionButton ---
       body: Column(
         children: [
+          // --- ADDED: New unified control bar for search, add, and filter actions ---
           Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                // --- FIX: Updated search bar label ---
-                labelText: 'Search by Name, Part No, Supplier, Location, Vehicle',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon:
-                    (_searchController.text.isNotEmpty ||
-                        _filterMake != null ||
-                        _filterModel != null ||
-                        _filterYear != null)
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: _clearFilters,
-                      )
-                    : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText: 'Search by Name, Part No, Supplier...',
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                       suffixIcon: _searchController.text.isNotEmpty 
+                       ? IconButton(
+                           icon: const Icon(Icons.clear),
+                           onPressed: _clearFilters,
+                         )
+                       : null,
+                    ),
+                  ),
                 ),
-                filled: true,
-                fillColor: Theme.of(
-                  context,
-                ).colorScheme.surfaceVariant.withOpacity(0.3),
-              ),
+                const SizedBox(width: 16),
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.add),
+                  label: const Text('Add Item'),
+                  onPressed: () => context.go('/inventory/add'),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 15,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: Icon(
+                    _showFilterOptions ? Icons.filter_alt_off : Icons.filter_alt,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _showFilterOptions = !_showFilterOptions;
+                    });
+                  },
+                  tooltip: 'Toggle Filters',
+                ),
+                 PopupMenuButton<String>(
+                  icon: const Icon(Icons.view_column),
+                  onSelected: (String columnKey) {
+                    setState(() {
+                      if (columnKey == 'name' ||
+                          columnKey == 'quantity' ||
+                          columnKey == 'salePrice') {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Cannot hide essential columns (Name, Quantity, Sale Price).',
+                            ),
+                          ),
+                        );
+                        return;
+                      }
+                      if (_visibleColumns.contains(columnKey)) {
+                        _visibleColumns.remove(columnKey);
+                      } else {
+                        _visibleColumns.add(columnKey);
+                      }
+                    });
+                  },
+                  itemBuilder: (BuildContext context) {
+                    return _allColumnProperties.entries.map((entry) {
+                      final columnKey = entry.key;
+                      final columnLabel = entry.value.label;
+                      final isCoreColumn =
+                          columnKey == 'name' ||
+                          columnKey == 'quantity' ||
+                          columnKey == 'salePrice';
+                      return CheckedPopupMenuItem<String>(
+                        value: columnKey,
+                        checked: _visibleColumns.contains(columnKey),
+                        enabled: !isCoreColumn,
+                        child: Text(columnLabel),
+                      );
+                    }).toList();
+                  },
+                  tooltip: 'Manage Columns',
+                ),
+              ],
             ),
           ),
+          // --- REMOVED: Old search bar widget ---
           if (_showFilterOptions)
             Card(
               margin: const EdgeInsets.symmetric(
-                horizontal: 8.0,
+                horizontal: 16.0,
                 vertical: 4.0,
               ),
               elevation: 2,
@@ -396,7 +403,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                   );
                 }
                 return ListView.builder(
-                  padding: const EdgeInsets.only(left: 8.0, right: 8.0, bottom: 80.0), // Padding for FAB
+                  padding: const EdgeInsets.only(left: 8.0, right: 8.0, bottom: 20.0),
                   itemCount: inventoryItems.length,
                   itemBuilder: (context, index) {
                     final item = inventoryItems[index];
@@ -645,7 +652,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
   }
 
   Alignment _getColumnAlignment(String columnKey) {
-    // All columns are now left-aligned as per the requirement.
     return Alignment.centerLeft;
   }
 }
+

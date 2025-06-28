@@ -200,6 +200,7 @@ class RepairJobDao extends DatabaseAccessor<AppDatabase> with _$RepairJobDaoMixi
     });
   }
   
+  // --- UPDATED: The DAO method now also fetches and provides "Other" items ---
   Stream<RepairJobWithDetails> watchJobDetails(int jobId) {
     final jobStream = (select(repairJobs)..where((r) => r.id.equals(jobId))).watchSingle();
   
@@ -216,8 +217,11 @@ class RepairJobDao extends DatabaseAccessor<AppDatabase> with _$RepairJobDaoMixi
         final vehicle = await vehicleFuture;
         final customer = await customerFuture;
         final grouped = groupBy(items, (RepairJobItem item) => item.itemType);
+        
         final inventoryItems = grouped['InventoryItem'] ?? [];
         final serviceItems = grouped['Service'] ?? [];
+        // --- ADDED: Filter out items of type "Other" ---
+        final otherItems = grouped['Other'] ?? [];
         
         return RepairJobWithDetails(
           job: job,
@@ -225,6 +229,8 @@ class RepairJobDao extends DatabaseAccessor<AppDatabase> with _$RepairJobDaoMixi
           customer: customer,
           inventoryItems: inventoryItems,
           serviceItems: serviceItems,
+          // --- ADDED: Pass the new list to the data class ---
+          otherItems: otherItems,
         );
       });
     });
@@ -238,12 +244,15 @@ class RepairJobWithCustomer {
   RepairJobWithCustomer({required this.repairJob, required this.vehicle, required this.customer});
 }
 
+// --- UPDATED: The data class now includes a list for otherItems ---
 class RepairJobWithDetails {
   final RepairJob job;
   final Vehicle? vehicle;
   final Customer? customer;
   final List<RepairJobItem> inventoryItems;
   final List<RepairJobItem> serviceItems;
+  // --- ADDED: A list to hold items of type "Other" ---
+  final List<RepairJobItem> otherItems;
 
   RepairJobWithDetails({
     required this.job,
@@ -251,6 +260,8 @@ class RepairJobWithDetails {
     required this.customer,
     required this.inventoryItems,
     required this.serviceItems,
+    // --- ADDED: The new list is now required in the constructor ---
+    required this.otherItems,
   });
 
   factory RepairJobWithDetails.empty() {
@@ -260,11 +271,16 @@ class RepairJobWithDetails {
       customer: null,
       inventoryItems: [],
       serviceItems: [],
+      // --- ADDED: Initialize the list in the empty factory ---
+      otherItems: [],
     );
   }
 
-  double get total => inventoryItems.fold<double>(0, (sum, item) => sum + (item.unitPrice * item.quantity)) + 
-                     serviceItems.fold<double>(0, (sum, item) => sum + (item.unitPrice * item.quantity));
+  // --- UPDATED: The total getter now includes the sum of otherItems ---
+  double get total => 
+      inventoryItems.fold<double>(0, (sum, item) => sum + (item.unitPrice * item.quantity)) + 
+      serviceItems.fold<double>(0, (sum, item) => sum + (item.unitPrice * item.quantity)) +
+      otherItems.fold<double>(0, (sum, item) => sum + (item.unitPrice * item.quantity));
 }
 
 
@@ -284,15 +300,11 @@ class RepairJobItemWithDetails {
     VehicleDao, ServiceHistoryDao, RepairJobDao
   ]
 )
-// --- FIX: Implement the Singleton Pattern ---
 class AppDatabase extends _$AppDatabase {
-  // Private constructor
   AppDatabase._() : super(_openConnection());
 
-  // The single, static instance
   static final AppDatabase _instance = AppDatabase._();
 
-  // The public factory constructor that returns the instance
   factory AppDatabase() {
     return _instance;
   }
@@ -338,7 +350,6 @@ class AppDatabase extends _$AppDatabase {
     },
   );
 }
-// --- END OF SINGLETON FIX ---
 
 LazyDatabase _openConnection() {
   return LazyDatabase(() async {
@@ -347,3 +358,4 @@ LazyDatabase _openConnection() {
     return NativeDatabase(file);
   });
 }
+

@@ -5,6 +5,7 @@ import 'package:autoshop_manager/data/repositories/customer_repository.dart';
 import 'package:drift/drift.dart' hide JsonKey;
 import 'package:autoshop_manager/core/providers.dart';
 import 'package:autoshop_manager/data/database/app_database.dart';
+import 'package:autoshop_manager/features/repair_job/presentation/providers/repair_job_providers.dart';
 import 'package:autoshop_manager/features/vehicle/presentation/vehicle_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
@@ -28,7 +29,6 @@ class AddEditRepairJobState with _$AddEditRepairJobState {
 
   const AddEditRepairJobState._();
 
-  // --- ENHANCEMENT 2: Added getters for specific sub-totals ---
   double get servicesTotalCost {
     if (items.isEmpty) return 0.0;
     return items
@@ -45,8 +45,18 @@ class AddEditRepairJobState with _$AddEditRepairJobState {
         .fold(0.0, (a, b) => a + b);
   }
 
+  // --- RENAMED: from extrasTotalCost to othersTotalCost and updated filter ---
+  double get othersTotalCost {
+    if (items.isEmpty) return 0.0;
+    return items
+        .where((item) => item.itemType == 'Other')
+        .map((item) => item.unitPrice * item.quantity)
+        .fold(0.0, (a, b) => a + b);
+  }
+
+  // --- UPDATED: Grand total now includes the cost of other items ---
   double get totalCost {
-    return servicesTotalCost + partsTotalCost;
+    return servicesTotalCost + partsTotalCost + othersTotalCost;
   }
 }
 
@@ -94,9 +104,9 @@ class AddEditRepairJobNotifier extends StateNotifier<AddEditRepairJobState> {
     state = state.copyWith(selectedVehicle: vehicle);
   }
 
-  void addInventoryItem(InventoryItem item, int quantity) {
+  bool addInventoryItem(InventoryItem item, int quantity) {
     if (item.quantity < quantity) {
-      throw Exception('Not enough items in stock.');
+      return false;
     }
     final newItem = RepairJobItem(
       id: -1,
@@ -108,6 +118,7 @@ class AddEditRepairJobNotifier extends StateNotifier<AddEditRepairJobState> {
       unitPrice: item.salePrice,
     );
     state = state.copyWith(items: [...state.items, newItem]);
+    return true;
   }
 
   void addServiceItem(Service service) {
@@ -123,18 +134,39 @@ class AddEditRepairJobNotifier extends StateNotifier<AddEditRepairJobState> {
     state = state.copyWith(items: [...state.items, newItem]);
   }
 
+  // --- RENAMED: from addExtraItem to addOtherItem and updated itemType ---
+  void addOtherItem({
+    required String description,
+    required int quantity,
+    required double price,
+  }) {
+    final newItem = RepairJobItem(
+      id: -1, 
+      repairJobId: _jobId ?? -1,
+      itemType: 'Other',
+      linkedItemId: -1,
+      description: description,
+      quantity: quantity,
+      unitPrice: price,
+    );
+    state = state.copyWith(items: [...state.items, newItem]);
+  }
+
   void incrementItemQuantity(RepairJobItem item) {
     final newQty = item.quantity + 1;
     updateItem(item, newQuantity: newQty);
   }
 
+  // --- UPDATED: The updateItem method now accepts an optional description ---
   void updateItem(
-      RepairJobItem itemToUpdate, {int? newQuantity, double? newPrice}) {
+      RepairJobItem itemToUpdate, {int? newQuantity, double? newPrice, String? newDescription}) {
     final updatedItems = state.items.map((item) {
       if (item == itemToUpdate) {
         return item.copyWith(
           quantity: newQuantity ?? item.quantity,
           unitPrice: newPrice ?? item.unitPrice,
+          // If a new description is provided, use it, otherwise keep the old one.
+          description: newDescription ?? item.description,
         );
       }
       return item;
@@ -223,17 +255,17 @@ class AddEditRepairJobNotifier extends StateNotifier<AddEditRepairJobState> {
     final vehicleId = state.selectedVehicle!.id;
     final now = DateTime.now();
 
-    final jobCompanion = RepairJobsCompanion(
-      id: Value(_jobId!),
-      vehicleId: Value(vehicleId),
-      completionDate: Value(now),
-      status: const Value('Completed'),
-      notes: Value(state.notes ?? ''),
-      totalAmount: Value(total),
-    );
-
     try {
       return await db.transaction(() async {
+        final jobCompanion = RepairJobsCompanion(
+          id: Value(_jobId!),
+          vehicleId: Value(vehicleId),
+          completionDate: Value(now),
+          status: const Value('Completed'),
+          notes: Value(state.notes ?? ''),
+          totalAmount: Value(total),
+        );
+
         await (db.update(db.repairJobs)..where((j) => j.id.equals(_jobId!))).write(jobCompanion);
 
         await (db.delete(db.repairJobItems)..where((i) => i.repairJobId.equals(_jobId!))).go();
@@ -268,6 +300,9 @@ class AddEditRepairJobNotifier extends StateNotifier<AddEditRepairJobState> {
               repairJobId: Value(_jobId!),
             ));
 
+        _ref.invalidate(activeRepairJobsProvider);
+        _ref.invalidate(activeRepairJobCountProvider);
+
         return _jobId;
       });
     } finally {
@@ -280,3 +315,4 @@ final addEditRepairJobNotifierProvider = StateNotifierProvider.autoDispose
     .family<AddEditRepairJobNotifier, AddEditRepairJobState, int?>(
   (ref, jobId) => AddEditRepairJobNotifier(ref, jobId),
 );
+
