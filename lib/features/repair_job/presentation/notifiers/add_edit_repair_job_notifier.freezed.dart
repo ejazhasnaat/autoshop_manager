@@ -25,9 +25,11 @@ mixin _$AddEditRepairJobState {
   Vehicle? get selectedVehicle => throw _privateConstructorUsedError;
   List<RepairJobItem> get items => throw _privateConstructorUsedError;
   String get status => throw _privateConstructorUsedError;
+  String get priority => throw _privateConstructorUsedError;
   String? get notes => throw _privateConstructorUsedError;
   bool get isNewJob => throw _privateConstructorUsedError;
   RepairJob? get initialJob => throw _privateConstructorUsedError;
+  List<RepairJobItem> get initialItems => throw _privateConstructorUsedError;
 
   /// Create a copy of AddEditRepairJobState
   /// with the given fields replaced by the non-null parameter values.
@@ -51,9 +53,11 @@ abstract class $AddEditRepairJobStateCopyWith<$Res> {
     Vehicle? selectedVehicle,
     List<RepairJobItem> items,
     String status,
+    String priority,
     String? notes,
     bool isNewJob,
     RepairJob? initialJob,
+    List<RepairJobItem> initialItems,
   });
 }
 
@@ -82,9 +86,11 @@ class _$AddEditRepairJobStateCopyWithImpl<
     Object? selectedVehicle = freezed,
     Object? items = null,
     Object? status = null,
+    Object? priority = null,
     Object? notes = freezed,
     Object? isNewJob = null,
     Object? initialJob = freezed,
+    Object? initialItems = null,
   }) {
     return _then(
       _value.copyWith(
@@ -117,6 +123,10 @@ class _$AddEditRepairJobStateCopyWithImpl<
                 ? _value.status
                 : status // ignore: cast_nullable_to_non_nullable
                       as String,
+            priority: null == priority
+                ? _value.priority
+                : priority // ignore: cast_nullable_to_non_nullable
+                      as String,
             notes: freezed == notes
                 ? _value.notes
                 : notes // ignore: cast_nullable_to_non_nullable
@@ -129,6 +139,10 @@ class _$AddEditRepairJobStateCopyWithImpl<
                 ? _value.initialJob
                 : initialJob // ignore: cast_nullable_to_non_nullable
                       as RepairJob?,
+            initialItems: null == initialItems
+                ? _value.initialItems
+                : initialItems // ignore: cast_nullable_to_non_nullable
+                      as List<RepairJobItem>,
           )
           as $Val,
     );
@@ -152,9 +166,11 @@ abstract class _$$AddEditRepairJobStateImplCopyWith<$Res>
     Vehicle? selectedVehicle,
     List<RepairJobItem> items,
     String status,
+    String priority,
     String? notes,
     bool isNewJob,
     RepairJob? initialJob,
+    List<RepairJobItem> initialItems,
   });
 }
 
@@ -180,9 +196,11 @@ class __$$AddEditRepairJobStateImplCopyWithImpl<$Res>
     Object? selectedVehicle = freezed,
     Object? items = null,
     Object? status = null,
+    Object? priority = null,
     Object? notes = freezed,
     Object? isNewJob = null,
     Object? initialJob = freezed,
+    Object? initialItems = null,
   }) {
     return _then(
       _$AddEditRepairJobStateImpl(
@@ -214,6 +232,10 @@ class __$$AddEditRepairJobStateImplCopyWithImpl<$Res>
             ? _value.status
             : status // ignore: cast_nullable_to_non_nullable
                   as String,
+        priority: null == priority
+            ? _value.priority
+            : priority // ignore: cast_nullable_to_non_nullable
+                  as String,
         notes: freezed == notes
             ? _value.notes
             : notes // ignore: cast_nullable_to_non_nullable
@@ -226,6 +248,10 @@ class __$$AddEditRepairJobStateImplCopyWithImpl<$Res>
             ? _value.initialJob
             : initialJob // ignore: cast_nullable_to_non_nullable
                   as RepairJob?,
+        initialItems: null == initialItems
+            ? _value._initialItems
+            : initialItems // ignore: cast_nullable_to_non_nullable
+                  as List<RepairJobItem>,
       ),
     );
   }
@@ -242,10 +268,13 @@ class _$AddEditRepairJobStateImpl extends _AddEditRepairJobState {
     this.selectedVehicle,
     final List<RepairJobItem> items = const [],
     this.status = 'In Progress',
+    this.priority = 'Normal',
     this.notes,
     this.isNewJob = true,
     this.initialJob,
+    final List<RepairJobItem> initialItems = const [],
   }) : _items = items,
+       _initialItems = initialItems,
        super._();
 
   @override
@@ -273,16 +302,27 @@ class _$AddEditRepairJobStateImpl extends _AddEditRepairJobState {
   @JsonKey()
   final String status;
   @override
+  @JsonKey()
+  final String priority;
+  @override
   final String? notes;
   @override
   @JsonKey()
   final bool isNewJob;
   @override
   final RepairJob? initialJob;
+  final List<RepairJobItem> _initialItems;
+  @override
+  @JsonKey()
+  List<RepairJobItem> get initialItems {
+    if (_initialItems is EqualUnmodifiableListView) return _initialItems;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_initialItems);
+  }
 
   @override
   String toString() {
-    return 'AddEditRepairJobState(isLoading: $isLoading, isSaving: $isSaving, jobId: $jobId, selectedCustomerWithVehicles: $selectedCustomerWithVehicles, selectedVehicle: $selectedVehicle, items: $items, status: $status, notes: $notes, isNewJob: $isNewJob, initialJob: $initialJob)';
+    return 'AddEditRepairJobState(isLoading: $isLoading, isSaving: $isSaving, jobId: $jobId, selectedCustomerWithVehicles: $selectedCustomerWithVehicles, selectedVehicle: $selectedVehicle, items: $items, status: $status, priority: $priority, notes: $notes, isNewJob: $isNewJob, initialJob: $initialJob, initialItems: $initialItems)';
   }
 
   @override
@@ -305,11 +345,17 @@ class _$AddEditRepairJobStateImpl extends _AddEditRepairJobState {
                 other.selectedVehicle == selectedVehicle) &&
             const DeepCollectionEquality().equals(other._items, _items) &&
             (identical(other.status, status) || other.status == status) &&
+            (identical(other.priority, priority) ||
+                other.priority == priority) &&
             (identical(other.notes, notes) || other.notes == notes) &&
             (identical(other.isNewJob, isNewJob) ||
                 other.isNewJob == isNewJob) &&
             (identical(other.initialJob, initialJob) ||
-                other.initialJob == initialJob));
+                other.initialJob == initialJob) &&
+            const DeepCollectionEquality().equals(
+              other._initialItems,
+              _initialItems,
+            ));
   }
 
   @override
@@ -322,9 +368,11 @@ class _$AddEditRepairJobStateImpl extends _AddEditRepairJobState {
     selectedVehicle,
     const DeepCollectionEquality().hash(_items),
     status,
+    priority,
     notes,
     isNewJob,
     initialJob,
+    const DeepCollectionEquality().hash(_initialItems),
   );
 
   /// Create a copy of AddEditRepairJobState
@@ -349,9 +397,11 @@ abstract class _AddEditRepairJobState extends AddEditRepairJobState {
     final Vehicle? selectedVehicle,
     final List<RepairJobItem> items,
     final String status,
+    final String priority,
     final String? notes,
     final bool isNewJob,
     final RepairJob? initialJob,
+    final List<RepairJobItem> initialItems,
   }) = _$AddEditRepairJobStateImpl;
   const _AddEditRepairJobState._() : super._();
 
@@ -370,11 +420,15 @@ abstract class _AddEditRepairJobState extends AddEditRepairJobState {
   @override
   String get status;
   @override
+  String get priority;
+  @override
   String? get notes;
   @override
   bool get isNewJob;
   @override
   RepairJob? get initialJob;
+  @override
+  List<RepairJobItem> get initialItems;
 
   /// Create a copy of AddEditRepairJobState
   /// with the given fields replaced by the non-null parameter values.

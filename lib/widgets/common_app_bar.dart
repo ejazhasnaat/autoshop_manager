@@ -21,6 +21,25 @@ class CommonAppBar extends ConsumerWidget implements PreferredSizeWidget {
     this.bottom,
   });
 
+  // Helper function to generate initials from a name
+  String _getInitials(String name) {
+    if (name.trim().isEmpty) return '?';
+    final parts = name
+        .trim()
+        .split(RegExp(r'[\s-]+'))
+        .where((part) => part.isNotEmpty);
+    if (parts.length > 1) {
+      return (parts.first.isNotEmpty ? parts.first[0] : '') +
+          (parts.last.isNotEmpty ? parts.last[0] : '');
+    } else if (parts.isNotEmpty) {
+      final singleWord = parts.first;
+      return singleWord.length > 1
+          ? singleWord.substring(0, 2)
+          : singleWord.substring(0, 1);
+    }
+    return '?';
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authNotifierProvider);
@@ -63,6 +82,7 @@ class CommonAppBar extends ConsumerWidget implements PreferredSizeWidget {
       titleSpacing: 0,
       title: Row(
         children: [
+          // --- Left Section ---
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -72,32 +92,92 @@ class CommonAppBar extends ConsumerWidget implements PreferredSizeWidget {
                 const SizedBox(width: 8),
                 Text(
                   title!,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.normal
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.normal,
                   ),
                 ),
               ],
             ],
           ),
+          // --- UPDATED: Center Section with Logo and Text ---
           Expanded(
             child: Center(
-              child: shopSettingsAsync.when(
-                data: (settings) => Text(
-                  settings.workshopName,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  overflow: TextOverflow.ellipsis,
-                ),
-                loading: () => const SizedBox.shrink(),
-                error: (e, s) => const SizedBox.shrink(),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Image.asset(
+                    'assets/images/app_logo.png', // Using path from your baseline file
+                    height: 40,
+                    errorBuilder: (context, error, stackTrace) {
+                      return const Icon(Icons.miscellaneous_services); // Fallback icon
+                    },
+                  ),
+                  const SizedBox(width: 12),
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'AutoManix',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          height: 1.2,
+                        ),
+                      ),
+                      Text(
+                        'Workshop Management System',
+                        style: theme.textTheme.bodySmall?.copyWith(height: 1.2),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
           ),
+          // --- UPDATED: Right Section with Workshop Info, User Initials, and Settings Icon ---
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               if (customActions != null) ...customActions!,
+              // Workshop Info
+              shopSettingsAsync.when(
+                data: (settings) => Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      settings.workshopName,
+                      style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      settings.workshopAddress,
+                      style: theme.textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+                loading: () => const SizedBox.shrink(),
+                error: (e, s) => const SizedBox.shrink(),
+              ),
+              const SizedBox(width: 12),
+              // User Initials
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: theme.colorScheme.primaryContainer,
+                child: Text(
+                  _getInitials(authState.user?.fullName ?? '...').toUpperCase(),
+                  style: TextStyle(
+                    color: theme.colorScheme.onPrimaryContainer,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
+              // Settings Menu Button
               PopupMenuButton<String>(
                 tooltip: 'Settings Menu',
+                icon: const Icon(Icons.settings_outlined), // Using settings icon
                 onSelected: (String result) async {
                   if (result == 'logout') {
                     await ref.read(authNotifierProvider.notifier).logout();
@@ -108,7 +188,7 @@ class CommonAppBar extends ConsumerWidget implements PreferredSizeWidget {
                     context.go('/signup');
                   } else if (result == 'reminder_intervals') {
                     context.push('/reminders/intervals');
-                  } else if (result == 'settings') { // UPDATE: Navigation for new settings screen
+                  } else if (result == 'settings') {
                     context.push('/settings');
                   }
                 },
@@ -116,34 +196,35 @@ class CommonAppBar extends ConsumerWidget implements PreferredSizeWidget {
                   final List<PopupMenuEntry<String>> menuItems = [];
                   if (authState.isAdmin) {
                     menuItems.addAll([
-                      const PopupMenuItem<String>(value: 'workshop_settings', child: Text('Workshop Settings')),
-                      // UPDATE: Link to the new general settings screen
-                      const PopupMenuItem<String>(value: 'settings', child: Text('App Settings')),
-                      const PopupMenuItem<String>(value: 'manage_users', child: Text('Manage Users')),
-                      const PopupMenuItem<String>(value: 'reminder_intervals', child: Text('Reminder Intervals')),
+                      const PopupMenuItem<String>(
+                        value: 'workshop_settings',
+                        child: Text('Workshop Settings'),
+                      ),
+                      const PopupMenuItem<String>(
+                        value: 'settings',
+                        child: Text('App Settings'),
+                      ),
+                      const PopupMenuItem<String>(
+                        value: 'manage_users',
+                        child: Text('Manage Users'),
+                      ),
+                      const PopupMenuItem<String>(
+                        value: 'reminder_intervals',
+                        child: Text('Reminder Intervals'),
+                      ),
                     ]);
                   }
                   menuItems.addAll([
-                    if(authState.isAdmin) const PopupMenuDivider(),
-                    const PopupMenuItem<String>(value: 'logout', child: Text('Logout')),
+                    if (authState.isAdmin) const PopupMenuDivider(),
+                    const PopupMenuItem<String>(
+                      value: 'logout',
+                      child: Text('Logout'),
+                    ),
                   ]);
                   return menuItems;
                 },
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12.0),
-                  child: Row(
-                    children: [
-                      Text(
-                        authState.user?.fullName ?? 'Guest',
-                        style: theme.textTheme.bodyMedium,
-                      ),
-                      const SizedBox(width: 6),
-                      const Icon(Icons.settings_outlined),
-                    ],
-                  ),
-                ),
               ),
-              const SizedBox(width: 4),
+              const SizedBox(width: 8),
             ],
           ),
         ],
@@ -156,3 +237,4 @@ class CommonAppBar extends ConsumerWidget implements PreferredSizeWidget {
   Size get preferredSize =>
       Size.fromHeight(kToolbarHeight + (bottom?.preferredSize.height ?? 0.0));
 }
+

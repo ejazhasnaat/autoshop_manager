@@ -11,8 +11,11 @@ import 'package:drift/drift.dart' hide Column;
 
 class AddEditCustomerScreen extends ConsumerStatefulWidget {
   final int? customerId;
+  // This parameter is kept for direct instantiation if ever needed,
+  // but the primary logic will now use the router's state.
+  final String? from;
 
-  const AddEditCustomerScreen({super.key, this.customerId});
+  const AddEditCustomerScreen({super.key, this.customerId, this.from});
 
   @override
   ConsumerState<AddEditCustomerScreen> createState() =>
@@ -95,7 +98,10 @@ class _AddEditCustomerScreenState extends ConsumerState<AddEditCustomerScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(widget.customerId == null ? 'Customer added successfully!' : 'Customer updated successfully!')),
         );
-        context.pop();
+        // --- FIX ---
+        // The return path is now reliably determined from the router state.
+        final returnPath = GoRouterState.of(context).uri.queryParameters['from'] ?? widget.from ?? '/customers';
+        context.go(returnPath);
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(widget.customerId == null ? 'Failed to add customer.' : 'Failed to update customer.')),
@@ -110,10 +116,20 @@ class _AddEditCustomerScreenState extends ConsumerState<AddEditCustomerScreen> {
         ? ref.watch(customerByIdProvider(widget.customerId!)) 
         : const AsyncValue.data(null);
     
+    // --- THOROUGH FIX ---
+    // Reliably get the 'from' parameter from the GoRouter state's query parameters.
+    // This correctly determines the navigation origin.
+    final routerState = GoRouterState.of(context);
+    final fromPath = routerState.uri.queryParameters['from'];
+    
+    // The back button should only appear if we explicitly came from the customer list.
+    final bool shouldShowBackButton = fromPath == '/customers';
+
     return Scaffold(
       appBar: CommonAppBar(
         title: widget.customerId == null ? 'Add Customer' : 'Edit Customer',
-        showBackButton: true,
+        // This now correctly passes true or false to the app bar.
+        showBackButton: shouldShowBackButton,
       ),
       body: customerAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -293,7 +309,7 @@ class _AddEditCustomerScreenState extends ConsumerState<AddEditCustomerScreen> {
                             onPressed: () async {
                               final updatedVehicle = await context.push<Vehicle>(
                                 '/vehicles/add_draft',
-                                extra: vehicle, // Pass the draft vehicle to the edit screen
+                                extra: vehicle,
                               );
                               if (updatedVehicle != null) {
                                 setState(() {
@@ -371,3 +387,4 @@ class _AddEditCustomerScreenState extends ConsumerState<AddEditCustomerScreen> {
     );
   }
 }
+

@@ -64,7 +64,6 @@ class VehicleDetailScreen extends ConsumerWidget {
                   'Year': vehicle.year?.toString(),
                   'Current Mileage': vehicle.currentMileage?.toString(),
                 },
-                // --- FIXED: Removed the unnecessary list brackets [] ---
                 actions: customerAsync.when(
                   data: (customerData) => TextButton.icon(
                     icon: const Icon(Icons.send_rounded),
@@ -89,7 +88,17 @@ class VehicleDetailScreen extends ConsumerWidget {
                 'at Mileage ': vehicle.lastEngineOilChangeMileage?.toString(),
                 'Last Gear Oil Change': _formatDate(vehicle.lastGearOilChangeDate),
                 'at Mileage  ': vehicle.lastGearOilChangeMileage?.toString(),
-              }),
+              },
+              // --- ADDED: A button to navigate to the new full history screen ---
+              actions: Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  icon: const Icon(Icons.history),
+                  label: const Text('View Full History'),
+                  onPressed: () => context.go('/vehicles/$vehicleId/history'),
+                ),
+              )
+              ),
             ],
           );
         },
@@ -146,3 +155,4 @@ class VehicleDetailScreen extends ConsumerWidget {
     );
   }
 }
+

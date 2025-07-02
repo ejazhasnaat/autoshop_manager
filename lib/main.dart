@@ -11,6 +11,7 @@ import 'package:autoshop_manager/features/auth/presentation/auth_providers.dart'
 import 'package:autoshop_manager/features/reminders/data/reminder_repository.dart';
 import 'package:autoshop_manager/features/reminders/domain/reminder_service.dart';
 import 'package:autoshop_manager/services/notification_service.dart';
+import 'package:autoshop_manager/services/data_cleanup_service.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -63,20 +64,17 @@ Future<void> main() async {
   final prefs = PreferenceRepository();
   final isSetupComplete = await prefs.isSetupComplete();
   
-  // FINAL FIX: We restore the original ProviderContainer approach
-  // which works for data loading, and fix the navigation issue within it.
   final container = ProviderContainer(
     overrides: [
-      // We no longer need to override appDatabaseProvider because its
-      // default implementation is now correct.
       setupCompleteProvider.overrideWith((ref) => isSetupComplete),
     ],
   );
 
   if (isSetupComplete) {
-    // FINAL FIX: We `await` the auto-login check BEFORE running the app.
-    // This solves the navigation race condition permanently.
     await container.read(authNotifierProvider.notifier).tryAutoLogin();
+    // --- ADDED: Run the data cleanup service on app startup ---
+    // This is a "fire-and-forget" call so it doesn't block the UI.
+    container.read(dataCleanupServiceProvider).deleteOldCompletedJobs();
   } else {
     await container.read(reminderRepositoryProvider).seedTemplatesFromJson();
     await container.read(serviceRepositoryProvider).seedServicesFromJson();
@@ -90,7 +88,6 @@ Future<void> main() async {
     ),
   );
 
-  // Background tasks can be initialized after the app starts.
   await notificationService.init();
   if (Platform.isAndroid || Platform.isIOS) {
     await Workmanager().initialize(
@@ -110,7 +107,6 @@ class MyApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // The auto-login is no longer needed here.
     final router = ref.watch(routerProvider);
 
     return MaterialApp.router(
@@ -131,3 +127,4 @@ class MyApp extends ConsumerWidget {
     );
   }
 }
+

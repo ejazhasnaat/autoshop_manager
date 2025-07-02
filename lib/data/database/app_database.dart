@@ -143,6 +143,8 @@ class RepairJobs extends Table {
   DateTimeColumn get creationDate => dateTime()();
   DateTimeColumn get completionDate => dateTime().nullable()();
   TextColumn get status => text()();
+  // --- ADDED: New column for job priority ---
+  TextColumn get priority => text().withDefault(const Constant('Normal'))();
   RealColumn get totalAmount => real().withDefault(const Constant(0.0))();
   TextColumn get notes => text().nullable()();
 }
@@ -200,7 +202,6 @@ class RepairJobDao extends DatabaseAccessor<AppDatabase> with _$RepairJobDaoMixi
     });
   }
   
-  // --- UPDATED: The DAO method now also fetches and provides "Other" items ---
   Stream<RepairJobWithDetails> watchJobDetails(int jobId) {
     final jobStream = (select(repairJobs)..where((r) => r.id.equals(jobId))).watchSingle();
   
@@ -218,21 +219,39 @@ class RepairJobDao extends DatabaseAccessor<AppDatabase> with _$RepairJobDaoMixi
         final customer = await customerFuture;
         final grouped = groupBy(items, (RepairJobItem item) => item.itemType);
         
-        final inventoryItems = grouped['InventoryItem'] ?? [];
-        final serviceItems = grouped['Service'] ?? [];
-        // --- ADDED: Filter out items of type "Other" ---
-        final otherItems = grouped['Other'] ?? [];
-        
         return RepairJobWithDetails(
           job: job,
           vehicle: vehicle,
           customer: customer,
-          inventoryItems: inventoryItems,
-          serviceItems: serviceItems,
-          // --- ADDED: Pass the new list to the data class ---
-          otherItems: otherItems,
+          inventoryItems: grouped['InventoryItem'] ?? [],
+          serviceItems: grouped['Service'] ?? [],
+          otherItems: grouped['Other'] ?? [],
         );
       });
+    });
+  }
+
+  Stream<List<RepairJobWithDetails>> watchAllJobsForVehicle(int vehicleId) {
+    final jobsQuery = select(repairJobs)
+      ..where((job) => job.vehicleId.equals(vehicleId))
+      ..orderBy([(r) => OrderingTerm(expression: r.completionDate, mode: OrderingMode.desc)]);
+
+    return jobsQuery.watch().switchMap((jobs) {
+      final futures = jobs.map((job) async {
+        final items = await (select(repairJobItems)..where((i) => i.repairJobId.equals(job.id))).get();
+        final grouped = groupBy(items, (RepairJobItem item) => item.itemType);
+
+        return RepairJobWithDetails(
+          job: job,
+          vehicle: null,
+          customer: null,
+          inventoryItems: grouped['InventoryItem'] ?? [],
+          serviceItems: grouped['Service'] ?? [],
+          otherItems: grouped['Other'] ?? [],
+        );
+      }).toList();
+
+      return Stream.fromFuture(Future.wait(futures));
     });
   }
 }
@@ -244,39 +263,34 @@ class RepairJobWithCustomer {
   RepairJobWithCustomer({required this.repairJob, required this.vehicle, required this.customer});
 }
 
-// --- UPDATED: The data class now includes a list for otherItems ---
 class RepairJobWithDetails {
   final RepairJob job;
   final Vehicle? vehicle;
   final Customer? customer;
   final List<RepairJobItem> inventoryItems;
   final List<RepairJobItem> serviceItems;
-  // --- ADDED: A list to hold items of type "Other" ---
   final List<RepairJobItem> otherItems;
 
   RepairJobWithDetails({
     required this.job,
-    required this.vehicle,
-    required this.customer,
+    this.vehicle,
+    this.customer,
     required this.inventoryItems,
     required this.serviceItems,
-    // --- ADDED: The new list is now required in the constructor ---
     required this.otherItems,
   });
 
   factory RepairJobWithDetails.empty() {
     return RepairJobWithDetails(
-      job: RepairJob(id: -1, vehicleId: -1, creationDate: DateTime.now(), status: '', totalAmount: 0.0),
+      job: RepairJob(id: -1, vehicleId: -1, creationDate: DateTime.now(), status: '', priority: 'Normal', totalAmount: 0.0),
       vehicle: null,
       customer: null,
       inventoryItems: [],
       serviceItems: [],
-      // --- ADDED: Initialize the list in the empty factory ---
       otherItems: [],
     );
   }
 
-  // --- UPDATED: The total getter now includes the sum of otherItems ---
   double get total => 
       inventoryItems.fold<double>(0, (sum, item) => sum + (item.unitPrice * item.quantity)) + 
       serviceItems.fold<double>(0, (sum, item) => sum + (item.unitPrice * item.quantity)) +
@@ -310,7 +324,7 @@ class AppDatabase extends _$AppDatabase {
   }
   
   @override
-  int get schemaVersion => 14;
+  int get schemaVersion => 15;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -341,6 +355,10 @@ class AppDatabase extends _$AppDatabase {
         await m.createTable(repairJobs);
         await m.createTable(repairJobItems);
         await m.addColumn(serviceHistories, serviceHistories.repairJobId);
+      }
+      // --- ADDED: Migration step to add the new 'priority' column ---
+      if (from < 15) {
+        await m.addColumn(repairJobs, repairJobs.priority);
       }
     },
     beforeOpen: (details) async {

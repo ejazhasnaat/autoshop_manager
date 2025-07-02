@@ -29,6 +29,7 @@ import 'package:autoshop_manager/features/settings/presentation/screens/workshop
 import 'package:autoshop_manager/features/vehicle/presentation/screens/add_edit_vehicle_model_screen.dart';
 import 'package:autoshop_manager/features/vehicle/presentation/screens/add_edit_vehicle_screen.dart';
 import 'package:autoshop_manager/features/vehicle/presentation/screens/vehicle_detail_screen.dart';
+import 'package:autoshop_manager/features/vehicle/presentation/screens/vehicle_history_screen.dart';
 import 'package:autoshop_manager/features/vehicle/presentation/screens/vehicle_model_list_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -105,7 +106,17 @@ final routerProvider = Provider<GoRouter>((ref) {
             GoRoute(
                 path: ':id',
                 builder: (context, state) => VehicleDetailScreen(
-                    vehicleId: int.parse(state.pathParameters['id']!)))
+                    vehicleId: int.parse(state.pathParameters['id']!)),
+                // --- ADDED: Nested route for the vehicle history screen ---
+                routes: [
+                  GoRoute(
+                    path: 'history',
+                    builder: (context, state) => VehicleHistoryScreen(
+                      vehicleId: int.parse(state.pathParameters['id']!)
+                    ),
+                  )
+                ]
+            )
           ]),
       GoRoute(
           path: '/inventory',
@@ -238,3 +249,4 @@ class GoRouterRefreshStream extends ChangeNotifier {
     super.dispose();
   }
 }
+

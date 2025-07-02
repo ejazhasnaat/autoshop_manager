@@ -9,6 +9,7 @@ import 'package:autoshop_manager/features/repair_job/presentation/providers/repa
 import 'package:autoshop_manager/features/vehicle/presentation/vehicle_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:collection/collection.dart';
 
 part 'add_edit_repair_job_notifier.freezed.dart';
 
@@ -22,42 +23,46 @@ class AddEditRepairJobState with _$AddEditRepairJobState {
     Vehicle? selectedVehicle,
     @Default([]) List<RepairJobItem> items,
     @Default('In Progress') String status,
+    @Default('Normal') String priority,
     String? notes,
     @Default(true) bool isNewJob,
     RepairJob? initialJob,
+    @Default([]) List<RepairJobItem> initialItems,
   }) = _AddEditRepairJobState;
 
   const AddEditRepairJobState._();
 
-  double get servicesTotalCost {
-    if (items.isEmpty) return 0.0;
-    return items
-        .where((item) => item.itemType == 'Service')
-        .map((item) => item.unitPrice * item.quantity)
-        .fold(0.0, (a, b) => a + b);
+  bool get hasChanges {
+    if (isNewJob && (selectedVehicle != null || items.isNotEmpty || notes?.isNotEmpty == true)) {
+      return true;
+    }
+    if (initialJob == null) return false;
+
+    final itemsChanged = !const DeepCollectionEquality().equals(items, initialItems);
+
+    return selectedVehicle?.id != initialJob!.vehicleId ||
+        status != initialJob!.status ||
+        priority != initialJob!.priority ||
+        notes != initialJob!.notes ||
+        itemsChanged;
   }
 
-  double get partsTotalCost {
-    if (items.isEmpty) return 0.0;
-    return items
-        .where((item) => item.itemType == 'InventoryItem')
-        .map((item) => item.unitPrice * item.quantity)
-        .fold(0.0, (a, b) => a + b);
-  }
+  double get servicesTotalCost => items
+      .where((item) => item.itemType == 'Service')
+      .map((item) => item.unitPrice * item.quantity)
+      .fold(0.0, (a, b) => a + b);
 
-  // --- RENAMED: from extrasTotalCost to othersTotalCost and updated filter ---
-  double get othersTotalCost {
-    if (items.isEmpty) return 0.0;
-    return items
-        .where((item) => item.itemType == 'Other')
-        .map((item) => item.unitPrice * item.quantity)
-        .fold(0.0, (a, b) => a + b);
-  }
+  double get partsTotalCost => items
+      .where((item) => item.itemType == 'InventoryItem')
+      .map((item) => item.unitPrice * item.quantity)
+      .fold(0.0, (a, b) => a + b);
 
-  // --- UPDATED: Grand total now includes the cost of other items ---
-  double get totalCost {
-    return servicesTotalCost + partsTotalCost + othersTotalCost;
-  }
+  double get othersTotalCost => items
+      .where((item) => item.itemType == 'Other')
+      .map((item) => item.unitPrice * item.quantity)
+      .fold(0.0, (a, b) => a + b);
+
+  double get totalCost => servicesTotalCost + partsTotalCost + othersTotalCost;
 }
 
 class AddEditRepairJobNotifier extends StateNotifier<AddEditRepairJobState> {
@@ -73,7 +78,8 @@ class AddEditRepairJobNotifier extends StateNotifier<AddEditRepairJobState> {
     }
   }
 
-  Future<void> _loadExistingJob(int jobId) async {
+  Future<void> _loadExistingJob(int? jobId) async {
+    if (jobId == null) return;
     state = state.copyWith(isLoading: true);
     final db = _ref.read(appDatabaseProvider);
     final customerRepo = _ref.read(customerRepositoryProvider);
@@ -81,114 +87,91 @@ class AddEditRepairJobNotifier extends StateNotifier<AddEditRepairJobState> {
       final job = await (db.select(db.repairJobs)..where((j) => j.id.equals(jobId))).getSingle();
       final vehicle = await (db.select(db.vehicles)..where((v) => v.id.equals(job.vehicleId))).getSingle();
       final customerWithVehicles = await customerRepo.getCustomerWithVehiclesById(vehicle.customerId);
+      final jobItems = await (db.select(db.repairJobItems)..where((i) => i.repairJobId.equals(jobId))).get();
 
-      state = state.copyWith(
-        isLoading: false,
-        selectedCustomerWithVehicles: customerWithVehicles,
-        selectedVehicle: vehicle,
-        items: await (db.select(db.repairJobItems)..where((i) => i.repairJobId.equals(jobId))).get(),
-        status: job.status,
-        notes: job.notes,
-        initialJob: job,
-      );
+      if (mounted) {
+        state = state.copyWith(
+          isLoading: false,
+          selectedCustomerWithVehicles: customerWithVehicles,
+          selectedVehicle: vehicle,
+          items: jobItems,
+          initialItems: jobItems,
+          status: job.status,
+          priority: job.priority,
+          notes: job.notes,
+          initialJob: job,
+          isNewJob: false,
+        );
+      }
     } catch (e) {
-      state = state.copyWith(isLoading: false);
+      if (mounted) {
+        state = state.copyWith(isLoading: false);
+      }
     }
   }
 
   void setCustomer(CustomerWithVehicles customer) {
     state = state.copyWith(selectedCustomerWithVehicles: customer, selectedVehicle: null);
+    if (customer.vehicles.length == 1) {
+      setVehicle(customer.vehicles.first);
+    }
   }
 
-  void setVehicle(Vehicle vehicle) {
-    state = state.copyWith(selectedVehicle: vehicle);
-  }
+  void setVehicle(Vehicle vehicle) =>
+      state = state.copyWith(selectedVehicle: vehicle);
+  
+  void setPriority(String newPriority) =>
+      state = state.copyWith(priority: newPriority);
 
   bool addInventoryItem(InventoryItem item, int quantity) {
-    if (item.quantity < quantity) {
-      return false;
-    }
-    final newItem = RepairJobItem(
-      id: -1,
-      repairJobId: _jobId ?? -1,
-      itemType: 'InventoryItem',
-      linkedItemId: item.id,
-      description: item.name,
-      quantity: quantity,
-      unitPrice: item.salePrice,
-    );
+    if (item.quantity < quantity) return false;
+    final newItem = RepairJobItem(id: -1, repairJobId: _jobId ?? -1, itemType: 'InventoryItem', linkedItemId: item.id, description: item.name, quantity: quantity, unitPrice: item.salePrice);
     state = state.copyWith(items: [...state.items, newItem]);
     return true;
   }
 
   void addServiceItem(Service service) {
-    final newItem = RepairJobItem(
-      id: -1,
-      repairJobId: _jobId ?? -1,
-      itemType: 'Service',
-      linkedItemId: service.id,
-      description: service.name,
-      quantity: 1,
-      unitPrice: service.price,
-    );
+    final newItem = RepairJobItem(id: -1, repairJobId: _jobId ?? -1, itemType: 'Service', linkedItemId: service.id, description: service.name, quantity: 1, unitPrice: service.price);
     state = state.copyWith(items: [...state.items, newItem]);
   }
 
-  // --- RENAMED: from addExtraItem to addOtherItem and updated itemType ---
-  void addOtherItem({
-    required String description,
-    required int quantity,
-    required double price,
-  }) {
-    final newItem = RepairJobItem(
-      id: -1, 
-      repairJobId: _jobId ?? -1,
-      itemType: 'Other',
-      linkedItemId: -1,
-      description: description,
-      quantity: quantity,
-      unitPrice: price,
-    );
+  void addOtherItem({required String description, required int quantity, required double price}) {
+    final newItem = RepairJobItem(id: -1, repairJobId: _jobId ?? -1, itemType: 'Other', linkedItemId: -1, description: description, quantity: quantity, unitPrice: price);
     state = state.copyWith(items: [...state.items, newItem]);
   }
 
-  void incrementItemQuantity(RepairJobItem item) {
-    final newQty = item.quantity + 1;
-    updateItem(item, newQuantity: newQty);
+  void incrementItemQuantity(RepairJobItem item) =>
+      updateItem(item, newQuantity: item.quantity + 1);
+
+  void updateItem(RepairJobItem itemToUpdate, {int? newQuantity, double? newPrice, String? newDescription}) {
+    state = state.copyWith(items: state.items.map((item) {
+      return item == itemToUpdate
+          ? item.copyWith(
+              quantity: newQuantity ?? item.quantity,
+              unitPrice: newPrice ?? item.unitPrice,
+              description: newDescription ?? item.description,
+            )
+          : item;
+    }).toList());
   }
 
-  // --- UPDATED: The updateItem method now accepts an optional description ---
-  void updateItem(
-      RepairJobItem itemToUpdate, {int? newQuantity, double? newPrice, String? newDescription}) {
-    final updatedItems = state.items.map((item) {
-      if (item == itemToUpdate) {
-        return item.copyWith(
-          quantity: newQuantity ?? item.quantity,
-          unitPrice: newPrice ?? item.unitPrice,
-          // If a new description is provided, use it, otherwise keep the old one.
-          description: newDescription ?? item.description,
-        );
-      }
-      return item;
-    }).toList();
-    state = state.copyWith(items: updatedItems);
-  }
+  void removeItem(RepairJobItem itemToRemove) =>
+      state = state.copyWith(items: state.items.where((item) => item != itemToRemove).toList());
 
-  void removeItem(RepairJobItem itemToRemove) {
-    final updatedItems =
-        state.items.where((item) => item != itemToRemove).toList();
-    state = state.copyWith(items: updatedItems);
-  }
+  void setStatus(String newStatus) => state = state.copyWith(status: newStatus);
 
-  void setStatus(String newStatus) {
-    state = state.copyWith(status: newStatus);
-  }
-
-  void setNotes(String newNotes) {
-    state = state.copyWith(notes: newNotes);
-  }
+  void setNotes(String newNotes) => state = state.copyWith(notes: newNotes);
 
   Future<int?> saveJob() async {
+    // --- FIX ---
+    // If the state is still loading, wait for it to finish before proceeding.
+    // This prevents a race condition when saveJob is called immediately after
+    // the provider is initialized (e.g., from the active jobs card).
+    if (state.isLoading) {
+      // Wait for the next state emission that is not loading.
+      await stream.firstWhere((s) => !s.isLoading);
+    }
+
     if (state.selectedVehicle == null) {
       throw Exception('A vehicle must be selected to save a job.');
     }
@@ -198,81 +181,89 @@ class AddEditRepairJobNotifier extends StateNotifier<AddEditRepairJobState> {
     final total = state.totalCost;
     
     try {
-      return await db.transaction(() async {
-        int savedJobId;
-
+      final savedJobId = await db.transaction(() async {
+        int currentJobId;
         if (state.isNewJob) {
           final jobCompanion = RepairJobsCompanion(
             vehicleId: Value(state.selectedVehicle!.id),
             creationDate: Value(DateTime.now()),
             status: Value(state.status),
+            priority: Value(state.priority),
             notes: Value(state.notes ?? ''),
             totalAmount: Value(total),
           );
-          savedJobId = await db.into(db.repairJobs).insert(jobCompanion);
-          state = state.copyWith(jobId: savedJobId, isNewJob: false);
+          currentJobId = await db.into(db.repairJobs).insert(jobCompanion);
         } else {
-          savedJobId = _jobId!;
+          if (state.initialJob == null) {
+            throw Exception('Inconsistent state: Attempting to update a job but no initial job data is present.');
+          }
+          currentJobId = state.initialJob!.id;
           final jobCompanion = RepairJobsCompanion(
-            id: Value(savedJobId),
+            id: Value(currentJobId),
             vehicleId: Value(state.selectedVehicle!.id),
             status: Value(state.status),
+            priority: Value(state.priority),
             notes: Value(state.notes ?? ''),
             totalAmount: Value(total),
           );
-          await (db.update(db.repairJobs)..where((j) => j.id.equals(savedJobId))).write(jobCompanion);
+          await (db.update(db.repairJobs)..where((j) => j.id.equals(currentJobId))).write(jobCompanion);
         }
 
-        await (db.delete(db.repairJobItems)..where((i) => i.repairJobId.equals(savedJobId))).go();
+        await (db.delete(db.repairJobItems)..where((i) => i.repairJobId.equals(currentJobId))).go();
 
         for (final item in state.items) {
-          final itemCompanion = RepairJobItemsCompanion(
-            repairJobId: Value(savedJobId),
-            itemType: Value(item.itemType),
-            linkedItemId: Value(item.linkedItemId),
-            description: Value(item.description),
-            quantity: Value(item.quantity),
-            unitPrice: Value(item.unitPrice),
-          );
+          final itemCompanion = RepairJobItemsCompanion(repairJobId: Value(currentJobId), itemType: Value(item.itemType), linkedItemId: Value(item.linkedItemId), description: Value(item.description), quantity: Value(item.quantity), unitPrice: Value(item.unitPrice));
           await db.into(db.repairJobItems).insert(itemCompanion);
         }
-        
-        return savedJobId;
+        return currentJobId;
       });
+
+      await _loadExistingJob(savedJobId);
+      return savedJobId;
+
     } finally {
-      state = state.copyWith(isSaving: false);
+      if (mounted) {
+        state = state.copyWith(isSaving: false);
+      }
     }
   }
 
   Future<int?> completeAndBillJob() async {
-    if (state.selectedVehicle == null) {
-      throw Exception('A vehicle must be selected to save a job.');
+    if (state.isLoading) {
+      await stream.firstWhere((s) => !s.isLoading);
     }
 
-    state = state.copyWith(isSaving: true);
-    final db = _ref.read(appDatabaseProvider);
-    final total = state.totalCost;
-    final vehicleId = state.selectedVehicle!.id;
-    final now = DateTime.now();
-
     try {
-      return await db.transaction(() async {
+      if (state.selectedVehicle == null || state.initialJob == null) {
+        throw Exception('Could not load vehicle or job details for completion.');
+      }
+
+      if (mounted) {
+        state = state.copyWith(isSaving: true);
+      }
+
+      final db = _ref.read(appDatabaseProvider);
+      final total = state.totalCost;
+      final vehicleId = state.selectedVehicle!.id;
+      final now = DateTime.now();
+      final currentJobId = state.initialJob!.id;
+      
+      final jobId = await db.transaction(() async {
         final jobCompanion = RepairJobsCompanion(
-          id: Value(_jobId!),
+          id: Value(currentJobId),
           vehicleId: Value(vehicleId),
           completionDate: Value(now),
           status: const Value('Completed'),
+          priority: Value(state.priority),
           notes: Value(state.notes ?? ''),
           totalAmount: Value(total),
         );
-
-        await (db.update(db.repairJobs)..where((j) => j.id.equals(_jobId!))).write(jobCompanion);
-
-        await (db.delete(db.repairJobItems)..where((i) => i.repairJobId.equals(_jobId!))).go();
+        await (db.update(db.repairJobs)..where((j) => j.id.equals(currentJobId))).write(jobCompanion);
+        await (db.delete(db.repairJobItems)..where((i) => i.repairJobId.equals(currentJobId))).go();
         
         for (final item in state.items) {
           final itemCompanion = RepairJobItemsCompanion(
-            repairJobId: Value(_jobId!),
+            repairJobId: Value(currentJobId),
             itemType: Value(item.itemType),
             linkedItemId: Value(item.linkedItemId),
             description: Value(item.description),
@@ -284,35 +275,50 @@ class AddEditRepairJobNotifier extends StateNotifier<AddEditRepairJobState> {
           if (item.itemType == 'InventoryItem') {
             final part = await (db.select(db.inventoryItems)..where((tbl) => tbl.id.equals(item.linkedItemId))).getSingle();
             final newQuantity = part.quantity - item.quantity;
-            await (db.update(db.inventoryItems)..where((tbl) => tbl.id.equals(item.linkedItemId))).write(
-                InventoryItemsCompanion(quantity: Value(newQuantity)));
+            await (db.update(db.inventoryItems)..where((tbl) => tbl.id.equals(item.linkedItemId))).write(InventoryItemsCompanion(quantity: Value(newQuantity)));
           }
         }
 
         final vehicle = await _ref.read(vehicleByIdProvider(vehicleId).future);
         final currentMileage = vehicle?.currentMileage ?? 0;
-
         await db.into(db.serviceHistories).insert(ServiceHistoriesCompanion(
-              vehicleId: Value(vehicleId),
-              serviceType: const Value('Repair Job'),
-              serviceDate: Value(now),
-              mileage: Value(currentMileage),
-              repairJobId: Value(_jobId!),
-            ));
-
-        _ref.invalidate(activeRepairJobsProvider);
-        _ref.invalidate(activeRepairJobCountProvider);
-
-        return _jobId;
+          vehicleId: Value(vehicleId),
+          serviceType: const Value('Repair Job'),
+          serviceDate: Value(now),
+          mileage: Value(currentMileage),
+          repairJobId: Value(currentJobId),
+        ));
+        return currentJobId;
       });
+      
+      return jobId;
     } finally {
-      state = state.copyWith(isSaving: false);
+      //
     }
   }
 }
 
 final addEditRepairJobNotifierProvider = StateNotifierProvider.autoDispose
     .family<AddEditRepairJobNotifier, AddEditRepairJobState, int?>(
-  (ref, jobId) => AddEditRepairJobNotifier(ref, jobId),
+  (ref, jobId) {
+    final link = ref.keepAlive();
+    Timer? timer;
+
+    ref.onDispose(() {
+      timer?.cancel();
+    });
+
+    ref.onCancel(() {
+      timer = Timer(const Duration(seconds: 30), () {
+        link.close();
+      });
+    });
+
+    ref.onResume(() {
+      timer?.cancel();
+    });
+
+    return AddEditRepairJobNotifier(ref, jobId);
+  },
 );
 

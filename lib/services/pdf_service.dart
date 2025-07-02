@@ -8,7 +8,6 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 class PdfReceiptService {
-  // --- FIX: The method signature now correctly accepts a pw.Font object ---
   Future<File> createReceiptPdf({
     required RepairJobWithDetails jobDetails,
     required ShopSetting shopSettings,
@@ -17,14 +16,12 @@ class PdfReceiptService {
   }) async {
     final pdf = pw.Document();
     
-    // --- FIX: A theme is created to apply the font to the entire document ---
     final pdfTheme = pw.ThemeData.withFont(base: font);
 
     final currencyFormat = NumberFormat.currency(symbol: '$currencySymbol ');
 
     pdf.addPage(
       pw.Page(
-        // Use the theme for this page
         theme: pdfTheme,
         pageFormat: PdfPageFormat.a4,
         build: (pw.Context context) {
@@ -50,8 +47,17 @@ class PdfReceiptService {
       ),
     );
 
-    final output = await getTemporaryDirectory();
-    final file = File("${output.path}/receipt_${jobDetails.job.id}.pdf");
+    // --- UPDATED: Switched from getTemporaryDirectory to getApplicationDocumentsDirectory for permanent storage ---
+    final output = await getApplicationDocumentsDirectory();
+    
+    final customerName = jobDetails.customer?.name.replaceAll(' ', '') ?? 'NoCustomer';
+    final vehicleNumber = jobDetails.vehicle?.registrationNumber.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '') ?? 'NoVehicle';
+    final dateString = DateFormat('yyyy-MM-dd').format(jobDetails.job.completionDate ?? jobDetails.job.creationDate);
+    final jobId = jobDetails.job.id;
+
+    final fileName = '${customerName}_${vehicleNumber}_${dateString}_Job${jobId}.pdf';
+    
+    final file = File("${output.path}/$fileName");
     await file.writeAsBytes(await pdf.save());
     
     return file;
@@ -193,3 +199,4 @@ class PdfReceiptService {
     );
   }
 }
+

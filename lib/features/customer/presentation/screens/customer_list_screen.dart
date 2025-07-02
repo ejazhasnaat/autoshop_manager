@@ -6,13 +6,10 @@ import 'package:autoshop_manager/features/customer/presentation/customer_provide
 import 'package:autoshop_manager/widgets/common_app_bar.dart';
 import 'package:autoshop_manager/features/auth/presentation/auth_providers.dart';
 import 'package:autoshop_manager/data/database/app_database.dart';
-// This import makes the CustomerWithVehicles type available
 import 'package:autoshop_manager/data/repositories/customer_repository.dart';
 
-// OPTIMIZATION: Provider for the search query.
 final customerSearchQueryProvider = StateProvider<String>((ref) => '');
 
-// OPTIMIZATION: Memoized provider for the filtered list.
 final filteredCustomerListProvider = Provider<AsyncValue<List<CustomerWithVehicles>>>((ref) {
   final customersAsyncValue = ref.watch(customerListProvider);
   final searchTerm = ref.watch(customerSearchQueryProvider).toLowerCase();
@@ -67,7 +64,8 @@ class CustomerListScreen extends ConsumerWidget {
                 ElevatedButton.icon(
                   icon: const Icon(Icons.add),
                   label: const Text('Add Customer'),
-                  onPressed: () => context.go('/customers/add'),
+                  // MODIFIED: Added query parameter to specify the return path.
+                  onPressed: () => context.go('/customers/add?from=/customers'),
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
@@ -206,7 +204,8 @@ class CustomerListItem extends ConsumerWidget {
                     TextButton.icon(
                       icon: const Icon(Icons.edit_outlined),
                       label: const Text('Edit'),
-                      onPressed: () => context.go('/customers/edit/${customer.id}'),
+                      // MODIFIED: Added query parameter to specify the return path.
+                      onPressed: () => context.go('/customers/edit/${customer.id}?from=/customers'),
                     ),
                     const SizedBox(width: 8),
                     if (isAdmin)
@@ -270,3 +269,4 @@ class CustomerListItem extends ConsumerWidget {
     );
   }
 }
+

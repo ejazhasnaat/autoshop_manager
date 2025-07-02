@@ -5,13 +5,15 @@ import 'package:autoshop_manager/data/repositories/customer_repository.dart';
 import 'package:autoshop_manager/features/repair_job/presentation/providers/repair_job_providers.dart';
 import 'package:autoshop_manager/features/settings/presentation/settings_providers.dart';
 import 'package:autoshop_manager/services/pdf_service.dart';
+import 'package:autoshop_manager/widgets/common_app_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:printing/printing.dart';
-import 'package:pdf/widgets.dart' as pw;
 import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
 import 'package:share_plus/share_plus.dart';
 
 class ReceiptScreen extends ConsumerStatefulWidget {
@@ -72,11 +74,50 @@ class _ReceiptScreenState extends ConsumerState<ReceiptScreen> {
   Future<void> _sharePdf() async {
     final pdfFile = await _generatePdf();
     if (pdfFile == null || !mounted) return;
+    
+    final jobDetails = await ref.read(repairJobDetailsProvider(widget.repairJobId).future);
+    final customer = jobDetails.customer;
 
-    await Share.shareXFiles(
-      [XFile(pdfFile.path, mimeType: 'application/pdf')],
-      subject: 'Receipt for Job #${widget.repairJobId}',
+    if (customer == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Customer information not found.')),
+        );
+        return;
+    }
+    
+    final bool? shouldShare = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+            title: const Text('Confirm Share'),
+            content: Text('Share receipt with ${customer.name} (${customer.phoneNumber})?'),
+            actions: [
+                TextButton(
+                    onPressed: () => Navigator.of(dialogContext).pop(false),
+                    child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                    onPressed: () => Navigator.of(dialogContext).pop(true),
+                    child: const Text('Share'),
+                ),
+            ],
+        ),
     );
+
+    if (shouldShare == true && mounted) {
+      try {
+          await Share.shareXFiles(
+              [XFile(pdfFile.path, mimeType: 'application/pdf')],
+              subject: 'Receipt for Job #${widget.repairJobId}',
+          );
+      } catch (e) {
+          ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                  content: Text('Sharing not supported. PDF saved to: ${pdfFile.path}'),
+                  duration: const Duration(seconds: 5),
+              ),
+          );
+      }
+    }
   }
 
 
@@ -87,32 +128,8 @@ class _ReceiptScreenState extends ConsumerState<ReceiptScreen> {
     final currencySymbol = ref.watch(currentCurrencySymbolProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Receipt - Job #${widget.repairJobId}'),
-        actions: [
-          _AppBarAction(
-            icon: Icons.share,
-            label: 'Share',
-            onPressed: _isProcessing ? null : _sharePdf,
-          ),
-          Consumer(
-            builder: (context, ref, child) {
-              final prefs = ref.watch(userPreferencesStreamProvider);
-              final showPrint = prefs.value?.autoPrintReceipt ?? false;
-
-              if (!showPrint) {
-                return const SizedBox.shrink();
-              }
-              
-              return _AppBarAction(
-                icon: Icons.print,
-                label: 'Print',
-                onPressed: _isProcessing ? null : _printPdf,
-              );
-            }
-          ),
-          const SizedBox(width: 8),
-        ],
+      appBar: CommonAppBar(
+        title: 'Receipt - Job #${widget.repairJobId}',
       ),
       body: jobDetailsAsync.when(
         data: (details) {
@@ -155,6 +172,11 @@ class _ReceiptScreenState extends ConsumerState<ReceiptScreen> {
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, s) => Center(child: Text('Error loading receipt: $e')),
+      ),
+      bottomNavigationBar: _BottomActionBar(
+        isProcessing: _isProcessing,
+        onShare: _sharePdf,
+        onPrint: _printPdf,
       ),
     );
   }
@@ -291,32 +313,65 @@ class _ReceiptScreenState extends ConsumerState<ReceiptScreen> {
   }
 }
 
-class _AppBarAction extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback? onPressed;
+class _BottomActionBar extends ConsumerWidget {
+  final bool isProcessing;
+  final VoidCallback onShare;
+  final VoidCallback onPrint;
 
-  const _AppBarAction({
-    required this.icon,
-    required this.label,
-    this.onPressed,
+  const _BottomActionBar({
+    required this.isProcessing,
+    required this.onShare,
+    required this.onPrint,
   });
 
   @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 8.0),
-      child: ElevatedButton.icon(
-        onPressed: onPressed,
-        icon: Icon(icon),
-        label: Text(label),
-        style: ElevatedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          textStyle: Theme.of(context).textTheme.labelLarge,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(30.0),
-          ),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final showPrint = ref.watch(userPreferencesStreamProvider).value?.autoPrintReceipt ?? false;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, -2),
+          )
+        ],
+        border: Border(
+          top: BorderSide(color: theme.dividerColor, width: 0.5),
         ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          if (showPrint) ...[
+            OutlinedButton.icon(
+              icon: const Icon(Icons.print_outlined),
+              label: const Text('Print'),
+              onPressed: isProcessing ? null : onPrint,
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+                side: BorderSide(color: theme.colorScheme.outline.withOpacity(0.5)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+            ),
+            const SizedBox(width: 12),
+          ],
+          ElevatedButton.icon(
+            icon: const Icon(Icons.share_outlined),
+            label: const Text('Share'),
+            onPressed: isProcessing ? null : onShare,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: theme.colorScheme.primary,
+              foregroundColor: theme.colorScheme.onPrimary,
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+          ),
+        ],
       ),
     );
   }
