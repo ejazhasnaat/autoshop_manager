@@ -85,7 +85,7 @@ class _ReminderIntervalsScreenState extends ConsumerState<ReminderIntervalsScree
   Widget build(BuildContext context) {
     return Scaffold(
       // --- UPDATED: Using the new showCloseButton property ---
-      appBar: const CommonAppBar(title: 'Reminder Intervals', showCloseButton: true),
+      appBar: const CommonAppBar(title: 'Reminder Intervals'),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Form(

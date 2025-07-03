@@ -1,9 +1,11 @@
+// lib/features/auth/presentation/auth_providers.dart
 import 'package:autoshop_manager/core/setup_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:autoshop_manager/data/repositories/auth_repository.dart';
 import 'package:autoshop_manager/data/repositories/preference_repository.dart';
 import 'package:autoshop_manager/data/database/app_database.dart';
 import 'package:autoshop_manager/services/secure_storage_service.dart';
+import 'package:autoshop_manager/core/providers.dart';
 
 class AuthState {
   final User? user;
@@ -149,4 +151,26 @@ class AuthNotifier extends StateNotifier<AuthState> {
       return false;
     }
   }
+  
+  Future<bool> updateUser({
+    required int userId,
+    required String fullName,
+    String? newPassword,
+  }) async {
+    state = state.copyWith(isLoading: true, error: null);
+    try {
+      await _ref.read(authRepositoryProvider).updateUser(
+            userId: userId,
+            fullName: fullName,
+            newPassword: newPassword,
+          );
+      _ref.invalidate(allUsersProvider);
+      state = state.copyWith(isLoading: false);
+      return true; // Assume success if no exception was thrown.
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+      return false;
+    }
+  }
 }
+

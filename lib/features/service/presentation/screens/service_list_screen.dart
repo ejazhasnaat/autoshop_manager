@@ -38,7 +38,7 @@ class _ServiceListScreenState extends ConsumerState<ServiceListScreen> {
     });
 
     return Scaffold(
-      appBar: const CommonAppBar(title: 'Manage Repair Services', showBackButton: true),
+      appBar: const CommonAppBar(title: 'Repair Services'),
       body: Column(
         children: [
           Padding(
@@ -121,14 +121,12 @@ class _ServiceListScreenState extends ConsumerState<ServiceListScreen> {
                           : 'No services match your search.'));
                 }
 
-                // --- NEW: Group services by category ---
                 final groupedServices = <String, List<Service>>{};
                 for (final service in services) {
                   (groupedServices[service.category] ??= []).add(service);
                 }
                 final categories = groupedServices.keys.toList();
 
-                // --- MODIFIED: Use grouped data with ExpansionTile ---
                 return ListView.builder(
                   padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
                   itemCount: categories.length,
@@ -140,9 +138,9 @@ class _ServiceListScreenState extends ConsumerState<ServiceListScreen> {
                       margin: const EdgeInsets.symmetric(vertical: 6.0, horizontal: 4.0),
                       elevation: 1,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      clipBehavior: Clip.antiAlias, // Ensures the tile respects the card's shape
+                      clipBehavior: Clip.antiAlias,
                       child: ExpansionTile(
-                        key: PageStorageKey(category), // Helps preserve expanded/collapsed state
+                        key: PageStorageKey(category),
                         title: Text(
                           category,
                           style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -167,7 +165,6 @@ class _ServiceListScreenState extends ConsumerState<ServiceListScreen> {
   }
 }
 
-// --- MODIFIED: The _ServiceCard no longer has its own Card parent ---
 class _ServiceCard extends ConsumerWidget {
   const _ServiceCard({required this.service});
 
@@ -177,7 +174,6 @@ class _ServiceCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final currentCurrencySymbol = ref.watch(currentCurrencySymbolProvider);
     
-    // The Card has been removed from here and wrapped around the ExpansionTile instead
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
       title: Text(service.name),
@@ -222,3 +218,4 @@ class _ServiceCard extends ConsumerWidget {
     );
   }
 }
+

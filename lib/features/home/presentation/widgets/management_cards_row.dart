@@ -11,7 +11,7 @@ class ManagementCardsRow extends StatelessWidget {
       children: [
         Expanded(
           child: _ManagementCard(
-            title: 'Manage Customers',
+            title: 'Customers',
             icon: Icons.people_alt_outlined,
             iconColor: Colors.teal.shade600,
             onTap: () => context.go('/customers'),
@@ -20,20 +20,38 @@ class ManagementCardsRow extends StatelessWidget {
         const SizedBox(width: 20),
         Expanded(
           child: _ManagementCard(
-            title: 'Manage Vehicles',
+            title: 'Vehicles',
             icon: Icons.directions_car_outlined,
             iconColor: Colors.indigo.shade600,
-            // UPDATED: This card now navigates directly to the add vehicle screen.
             onTap: () => context.go('/vehicle_models'),
           ),
         ),
         const SizedBox(width: 20),
         Expanded(
           child: _ManagementCard(
-            title: 'Manage Inventory',
+            title: 'Inventory',
             icon: Icons.inventory_2_outlined,
             iconColor: Colors.brown.shade600,
             onTap: () => context.go('/inventory'),
+          ),
+        ),
+        const SizedBox(width: 20),
+        Expanded(
+          child: _ManagementCard(
+            title: 'Repair Services',
+            icon: Icons.build_circle_outlined,
+            iconColor: Colors.pink.shade600,
+            onTap: () => context.go('/services'),
+          ),
+        ),
+        // --- FIX: Added new card for Reminder Intervals ---
+        const SizedBox(width: 20),
+        Expanded(
+          child: _ManagementCard(
+            title: 'Reminder Intervals',
+            icon: Icons.alarm_on_outlined,
+            iconColor: Colors.orange.shade700,
+            onTap: () => context.push('/reminders/intervals'),
           ),
         ),
       ],
@@ -73,7 +91,6 @@ class _ManagementCard extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Use a Flexible widget to allow the title to wrap if necessary.
                   Flexible(
                     child: Text(
                       title,
@@ -85,7 +102,6 @@ class _ManagementCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 16),
-              // You can add a subtitle or description here if needed in the future.
               Text(
                 'Click to view and manage',
                 style: textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline),

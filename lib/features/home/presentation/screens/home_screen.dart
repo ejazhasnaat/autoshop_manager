@@ -15,14 +15,13 @@ class HomeScreen extends ConsumerWidget {
     return Scaffold(
       appBar: const CommonAppBar(title: 'Dashboard'),
       body: SingleChildScrollView(
-        // Using a LayoutBuilder to create a responsive layout for larger screens
         child: LayoutBuilder(
           builder: (context, constraints) {
-            // On smaller screens, stack the panels vertically. On larger screens, show them side-by-side.
             bool isWide = constraints.maxWidth > 1200;
             return Padding(
               padding: const EdgeInsets.all(24.0),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const DashboardStatsRow(),
                   const SizedBox(height: 24),
@@ -42,8 +41,16 @@ class HomeScreen extends ConsumerWidget {
                             QuickActionsPanel(),
                           ],
                         ),
-                  const SizedBox(height: 24), // Added spacing
-                  const ManagementCardsRow(), // Added the new widget
+                  const SizedBox(height: 24),
+                  // ADDED: Title for the management cards section.
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8.0),
+                    child: Text(
+                      'Manage Data',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                  ),
+                  const ManagementCardsRow(),
                 ],
               ),
             );

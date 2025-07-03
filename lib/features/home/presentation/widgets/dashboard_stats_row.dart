@@ -158,7 +158,12 @@ class _DashboardStatCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 4),
-                  Text(changeText!, style: textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline)),
+                  Expanded(
+                    child: Text(
+                      changeText!, 
+                      style: textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline)
+                    ),
+                  ),
                 ],
               ),
           ],

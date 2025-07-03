@@ -4,7 +4,6 @@ import 'package:autoshop_manager/data/database/app_database.dart';
 import 'package:autoshop_manager/features/auth/presentation/auth_providers.dart';
 import 'package:autoshop_manager/features/auth/presentation/screens/initial_setup_screen.dart';
 import 'package:autoshop_manager/features/auth/presentation/screens/login_screen.dart';
-import 'package:autoshop_manager/features/auth/presentation/screens/signup_screen.dart';
 import 'package:autoshop_manager/features/customer/presentation/screens/add_edit_customer_screen.dart';
 import 'package:autoshop_manager/features/customer/presentation/screens/customer_detail_screen.dart';
 import 'package:autoshop_manager/features/customer/presentation/screens/customer_list_screen.dart';
@@ -25,7 +24,6 @@ import 'package:autoshop_manager/features/reports/presentation/screens/reports_s
 import 'package:autoshop_manager/features/service/presentation/screens/add_edit_service_screen.dart';
 import 'package:autoshop_manager/features/service/presentation/screens/service_list_screen.dart';
 import 'package:autoshop_manager/features/settings/presentation/screens/settings_screen.dart';
-import 'package:autoshop_manager/features/settings/presentation/screens/workshop_settings_screen.dart';
 import 'package:autoshop_manager/features/vehicle/presentation/screens/add_edit_vehicle_model_screen.dart';
 import 'package:autoshop_manager/features/vehicle/presentation/screens/add_edit_vehicle_screen.dart';
 import 'package:autoshop_manager/features/vehicle/presentation/screens/vehicle_detail_screen.dart';
@@ -66,8 +64,6 @@ final routerProvider = Provider<GoRouter>((ref) {
           path: '/initial-setup',
           builder: (context, state) => const InitialSetupScreen()),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
-      GoRoute(
-          path: '/signup', builder: (context, state) => const SignUpScreen()),
       GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
       GoRoute(
           path: '/customers',
@@ -107,7 +103,6 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: ':id',
                 builder: (context, state) => VehicleDetailScreen(
                     vehicleId: int.parse(state.pathParameters['id']!)),
-                // --- ADDED: Nested route for the vehicle history screen ---
                 routes: [
                   GoRoute(
                     path: 'history',
@@ -199,9 +194,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
           path: '/settings',
           builder: (context, state) => const SettingsScreen()),
-      GoRoute(
-          path: '/settings/workshop',
-          builder: (context, state) => const WorkshopSettingsScreen()),
       GoRoute(
         path: '/reminders',
         builder: (context, state) {

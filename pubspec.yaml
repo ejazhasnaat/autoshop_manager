@@ -114,7 +114,8 @@ flutter:
     - assets/reminder_templates.json
     - assets/repair_services.json
     - assets/images/app_logo.png # App logo
-    - assets/fonts/ # Make sure this path is correct
+    - assets/fonts/
+    - assets/countries.json
 
   fonts:
     - family: NotoSans

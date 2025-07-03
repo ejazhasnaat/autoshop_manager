@@ -1,19 +1,16 @@
 // lib/features/reminders/presentation/screens/reminders_screen.dart
 import 'package:autoshop_manager/data/repositories/customer_repository.dart';
 import 'package:autoshop_manager/features/settings/presentation/settings_providers.dart';
-import 'package:autoshop_manager/features/settings/presentation/workshop_settings_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:autoshop_manager/data/database/app_database.dart';
 import 'package:autoshop_manager/features/customer/presentation/customer_providers.dart';
-import 'package:autoshop_manager/features/reminders/presentation/providers/reminder_providers.dart';
+import 'package:autoshop_manager/features/reminders/presentation/providers/reminder_providers.dart' hide shopSettingsProvider;
 import 'package:autoshop_manager/widgets/common_app_bar.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:collection/collection.dart';
 import 'package:go_router/go_router.dart';
-
-// REMOVED: The urduTranslationMap and all related logic have been deleted.
 
 class RemindersScreen extends ConsumerStatefulWidget {
   final int? customerId;
@@ -32,7 +29,6 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> with SingleTi
   Vehicle? _selectedVehicle;
   MessageTemplate? _selectedTemplate;
   final _messageController = TextEditingController();
-  // REMOVED: State variables for translation are no longer needed.
 
   @override
   void initState() {
@@ -92,8 +88,6 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> with SingleTi
     _messageController.text = message;
   }
   
-  // REMOVED: The _translateMessage method has been deleted.
-  
   void _sendMessage(String scheme, String phoneNumber) async {
     final encodedMessage = Uri.encodeComponent(_messageController.text);
     final isWhatsApp = scheme.contains('wa.me');
@@ -121,11 +115,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> with SingleTi
     final bool canSend = _selectedCustomer != null && _selectedVehicle != null && _selectedTemplate != null;
 
     return Scaffold(
-      appBar: CommonAppBar(
-        title: 'Reminders', 
-        showBackButton: !widget.showCloseButton,
-        showCloseButton: widget.showCloseButton,
-      ),
+      appBar: CommonAppBar(title: 'Reminders'),
       body: Column(
         children: [
           Material(
@@ -155,7 +145,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> with SingleTi
   Widget _buildSendReminderTab(bool canSend) {
     final customersAsync = ref.watch(customerListProvider);
     final templatesAsync = ref.watch(messageTemplatesProvider);
-    final workshopSettingsAsync = ref.watch(workshopSettingsProvider);
+    final workshopSettingsAsync = ref.watch(shopSettingsProvider);
 
     return workshopSettingsAsync.when(
       data: (shopSettings) {
@@ -173,7 +163,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> with SingleTi
                     setState(() {
                       _selectedCustomer = val;
                       _selectedVehicle = null;
-                      if (shopSettings != null) _populateMessage(shopSettings);
+                      _populateMessage(shopSettings);
                     });
                   },
                 ),
@@ -189,7 +179,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> with SingleTi
                   onChanged: (val) {
                     setState(() {
                       _selectedVehicle = val;
-                      if (shopSettings != null) _populateMessage(shopSettings);
+                      _populateMessage(shopSettings);
                     });
                   },
                 ),
@@ -200,22 +190,18 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> with SingleTi
                   Expanded(
                     child: templatesAsync.when(
                       data: (templates) {
-                        // FIX: Ensure the selected value is an instance from the current items list
-                        // to prevent object equality errors in the DropdownButton.
                         final MessageTemplate? currentSelection = _selectedTemplate == null
                             ? null
-                            // We find the item in the new list that matches our state object.
-                            // `templateType` is assumed to be a unique identifier.
                             : templates.firstWhereOrNull((t) => t.templateType == _selectedTemplate!.templateType);
 
                         return DropdownButtonFormField<MessageTemplate>(
-                          value: currentSelection, // Use the synchronized value
+                          value: currentSelection,
                           decoration: const InputDecoration(labelText: 'Select Template', border: OutlineInputBorder()),
                           items: templates.map((t) => DropdownMenuItem(value: t, child: Text(t.title))).toList(),
                           onChanged: (val) {
                             setState(() {
                               _selectedTemplate = val;
-                              if (shopSettings != null) _populateMessage(shopSettings);
+                              _populateMessage(shopSettings);
                             });
                           },
                         );
@@ -274,7 +260,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> with SingleTi
 
   Widget _buildUpcomingRemindersTab() {
     final upcomingAsync = ref.watch(upcomingRemindersProvider);
-    final workshopSettingsAsync = ref.watch(workshopSettingsProvider);
+    final workshopSettingsAsync = ref.watch(shopSettingsProvider);
 
     return upcomingAsync.when(
       data: (vehicles) {
@@ -385,3 +371,4 @@ class _UpcomingReminderTile extends ConsumerWidget {
     );
   }
 }
+

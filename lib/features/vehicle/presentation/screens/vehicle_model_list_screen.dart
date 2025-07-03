@@ -70,7 +70,7 @@ class _VehicleModelListScreenState extends ConsumerState<VehicleModelListScreen>
     final vehicleModelsAsync = ref.watch(vehicleModelListProvider);
 
     return Scaffold(
-      appBar: const CommonAppBar(title: 'Vehicle Models'),
+      appBar: const CommonAppBar(title: 'Vehicles'),
       body: Column(
         children: [
           Padding(

@@ -1,0 +1,142 @@
+[
+  {
+    "name": "United States",
+    "currencyName": "United States Dollar",
+    "currencyCode": "USD",
+    "currencySymbol": "$",
+    "flag": "🇺🇸"
+  },
+  {
+    "name": "United Kingdom",
+    "currencyName": "British Pound",
+    "currencyCode": "GBP",
+    "currencySymbol": "£",
+    "flag": "🇬🇧"
+  },
+  {
+    "name": "Eurozone",
+    "currencyName": "Euro",
+    "currencyCode": "EUR",
+    "currencySymbol": "€",
+    "flag": "🇪🇺"
+  },
+  {
+    "name": "Japan",
+    "currencyName": "Japanese Yen",
+    "currencyCode": "JPY",
+    "currencySymbol": "¥",
+    "flag": "🇯🇵"
+  },
+  {
+    "name": "Canada",
+    "currencyName": "Canadian Dollar",
+    "currencyCode": "CAD",
+    "currencySymbol": "$",
+    "flag": "🇨🇦"
+  },
+  {
+    "name": "Australia",
+    "currencyName": "Australian Dollar",
+    "currencyCode": "AUD",
+    "currencySymbol": "$",
+    "flag": "🇦🇺"
+  },
+  {
+    "name": "Switzerland",
+    "currencyName": "Swiss Franc",
+    "currencyCode": "CHF",
+    "currencySymbol": "CHF",
+    "flag": "🇨🇭"
+  },
+  {
+    "name": "China",
+    "currencyName": "Chinese Yuan",
+    "currencyCode": "CNY",
+    "currencySymbol": "¥",
+    "flag": "🇨🇳"
+  },
+  {
+    "name": "India",
+    "currencyName": "Indian Rupee",
+    "currencyCode": "INR",
+    "currencySymbol": "₹",
+    "flag": "🇮🇳"
+  },
+  {
+    "name": "Pakistan",
+    "currencyName": "Pakistani Rupee",
+    "currencyCode": "PKR",
+    "currencySymbol": "₨",
+    "flag": "🇵🇰"
+  },
+  {
+    "name": "Saudi Arabia",
+    "currencyName": "Saudi Riyal",
+    "currencyCode": "SAR",
+    "currencySymbol": "﷼",
+    "flag": "🇸🇦"
+  },
+  {
+    "name": "United Arab Emirates",
+    "currencyName": "UAE Dirham",
+    "currencyCode": "AED",
+    "currencySymbol": "د.إ",
+    "flag": "🇦🇪"
+  },
+  {
+    "name": "Brazil",
+    "currencyName": "Brazilian Real",
+    "currencyCode": "BRL",
+    "currencySymbol": "R$",
+    "flag": "🇧🇷"
+  },
+  {
+    "name": "Russia",
+    "currencyName": "Russian Ruble",
+    "currencyCode": "RUB",
+    "currencySymbol": "₽",
+    "flag": "🇷🇺"
+  },
+  {
+    "name": "South Africa",
+    "currencyName": "South African Rand",
+    "currencyCode": "ZAR",
+    "currencySymbol": "R",
+    "flag": "🇿🇦"
+  },
+  {
+    "name": "New Zealand",
+    "currencyName": "New Zealand Dollar",
+    "currencyCode": "NZD",
+    "currencySymbol": "$",
+    "flag": "🇳🇿"
+  },
+  {
+    "name": "Singapore",
+    "currencyName": "Singapore Dollar",
+    "currencyCode": "SGD",
+    "currencySymbol": "$",
+    "flag": "🇸🇬"
+  },
+  {
+    "name": "Mexico",
+    "currencyName": "Mexican Peso",
+    "currencyCode": "MXN",
+    "currencySymbol": "$",
+    "flag": "🇲🇽"
+  },
+  {
+    "name": "Turkey",
+    "currencyName": "Turkish Lira",
+    "currencyCode": "TRY",
+    "currencySymbol": "₺",
+    "flag": "🇹🇷"
+  },
+  {
+    "name": "South Korea",
+    "currencyName": "South Korean Won",
+    "currencyCode": "KRW",
+    "currencySymbol": "₩",
+    "flag": "🇰🇷"
+  }
+]

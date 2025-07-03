@@ -74,7 +74,9 @@ class _AddEditRepairJobScreenState extends ConsumerState<AddEditRepairJobScreen>
     final state = ref.watch(provider);
     final notifier = ref.read(provider.notifier);
     final isNewJob = widget.repairJobId == null;
-    final preferencesAsync = ref.watch(userPreferencesStreamProvider);
+    
+    // --- FIX: Use the new currencyFormatterProvider ---
+    final currencyFormatter = ref.watch(currencyFormatterProvider);
 
     void _saveAllEdits() {
       _othersListKey.currentState?._saveAndExitEditMode();
@@ -83,8 +85,6 @@ class _AddEditRepairJobScreenState extends ConsumerState<AddEditRepairJobScreen>
       FocusScope.of(context).unfocus();
     }
 
-    // UPDATED: Logic to determine if the save button should be enabled.
-    // It now requires a vehicle to be selected in addition to other conditions.
     final canSave = (isNewJob || state.hasChanges) && state.selectedVehicle != null;
 
     return PopScope(
@@ -103,80 +103,78 @@ class _AddEditRepairJobScreenState extends ConsumerState<AddEditRepairJobScreen>
         ),
         body: GestureDetector(
           onTap: _saveAllEdits,
-          child: preferencesAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (err, st) => Center(child: Text("Error loading settings: $err")),
-              data: (prefs) {
-                final currencySymbol = prefs.defaultCurrency;
-                return state.isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : Column(
-                      children: [
-                        Expanded(
-                          child: Scrollbar(
-                            controller: _scrollController,
-                            child: SingleChildScrollView(
-                              controller: _scrollController,
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  _buildCustomerAndVehicleSection(context, ref),
-                                  const SizedBox(height: 4),
-                                  _buildDetailsCard(context, ref),
-                                  const SizedBox(height: 8),
-                                  _buildItemsSection(context, ref, 'Services', _servicesListKey, currencySymbol),
-                                  const SizedBox(height: 8),
-                                  _buildItemsSection(context, ref, 'Parts', _partsListKey, currencySymbol),
-                                  const SizedBox(height: 8),
-                                  _buildItemsSection(context, ref, 'Others', _othersListKey, currencySymbol),
-                                  const SizedBox(height: 8),
-                                  Align(
-                                    alignment: Alignment.centerRight,
-                                    child: Padding(
-                                      padding: const EdgeInsets.only(right: 8.0),
-                                      child: Text(
-                                        'Grand Total: ${NumberFormat.currency(symbol: '$currencySymbol ').format(state.totalCost)}',
-                                        style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 40),
-                                ],
+          child: state.isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : Column(
+                children: [
+                  Expanded(
+                    child: Scrollbar(
+                      controller: _scrollController,
+                      child: SingleChildScrollView(
+                        controller: _scrollController,
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _buildCustomerAndVehicleSection(context, ref),
+                            const SizedBox(height: 4),
+                            _buildDetailsCard(context, ref),
+                            const SizedBox(height: 8),
+                            _buildItemsSection(context, ref, 'Services', _servicesListKey),
+                            const SizedBox(height: 8),
+                            _buildItemsSection(context, ref, 'Parts', _partsListKey),
+                            const SizedBox(height: 8),
+                            _buildItemsSection(context, ref, 'Others', _othersListKey),
+                            const SizedBox(height: 8),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: Padding(
+                                padding: const EdgeInsets.only(right: 8.0),
+                                // --- FIX: Use the new formatter ---
+                                child: Text(
+                                  'Grand Total: ${currencyFormatter.format(state.totalCost)}',
+                                  style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)
+                                ),
                               ),
                             ),
+                            const SizedBox(height: 40),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  _BottomActionBar(
+                    isNewJob: isNewJob,
+                    canSave: canSave,
+                    onCancel: () {
+                      context.go('/home');
+                    },
+                    onCreate: () async {
+                      _saveAllEdits();
+                      final savedId = await notifier.saveJob();
+                      if(context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(isNewJob ? 'Job Created!' : 'Job Updated!'), 
+                            backgroundColor: Colors.green
                           ),
-                        ),
-                        _BottomActionBar(
-                          isNewJob: isNewJob,
-                          canSave: canSave, // UPDATED: Pass the calculated boolean
-                          onCancel: () {
-                            context.go('/home');
-                          },
-                          onCreate: () async {
-                            _saveAllEdits();
-                            final savedId = await notifier.saveJob();
-                            if(context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(isNewJob ? 'Job Created!' : 'Job Updated!'), 
-                                  backgroundColor: Colors.green
-                                ),
-                              );
-                              context.go('/home');
-                            }
-                          },
-                        ),
-                      ],
-                    );
-              }),
+                        );
+                        context.go('/home');
+                      }
+                    },
+                  ),
+                ],
+              ),
         ),
       ),
     );
   }
 
-  Widget _buildItemsSection(BuildContext context, WidgetRef ref, String title, Key key, String currencySymbol) {
+  // --- FIX: Removed currencySymbol parameter ---
+  Widget _buildItemsSection(BuildContext context, WidgetRef ref, String title, Key key) {
     final state = ref.watch(addEditRepairJobNotifierProvider(widget.repairJobId));
+    // --- FIX: Use the new currencyFormatterProvider ---
+    final currencyFormatter = ref.watch(currencyFormatterProvider);
     final bool isService = title == 'Services';
     final bool isPart = title == 'Parts';
     final bool isOther = title == 'Others';
@@ -233,7 +231,7 @@ class _AddEditRepairJobScreenState extends ConsumerState<AddEditRepairJobScreen>
                           ? null
                           : () {
                               (key as GlobalKey<_EditableItemsListState>).currentState?._saveAndExitEditMode();
-                              if (isService) _showAddServiceDialog(context, ref, currencySymbol);
+                              if (isService) _showAddServiceDialog(context, ref);
                               else if (isPart) _showAddPartDialog(context, ref);
                               else _showAddOtherDialog(context, ref);
                             },
@@ -243,8 +241,9 @@ class _AddEditRepairJobScreenState extends ConsumerState<AddEditRepairJobScreen>
                 Expanded(
                   child: Align(
                     alignment: Alignment.centerRight,
+                    // --- FIX: Use the new formatter ---
                     child: Text(
-                      'Sub-Total: ${NumberFormat.currency(symbol: '$currencySymbol ').format(subTotal)}',
+                      'Sub-Total: ${currencyFormatter.format(subTotal)}',
                       style: Theme.of(context).textTheme.titleMedium,
                       textAlign: TextAlign.right,
                     ),
@@ -263,7 +262,6 @@ class _AddEditRepairJobScreenState extends ConsumerState<AddEditRepairJobScreen>
                 key: key,
                 items: items,
                 jobId: widget.repairJobId,
-                currencySymbol: currencySymbol,
               ),
           ],
         ),
@@ -348,7 +346,8 @@ class _AddEditRepairJobScreenState extends ConsumerState<AddEditRepairJobScreen>
     );
   }
 
-  void _showAddServiceDialog(BuildContext context, WidgetRef ref, String currencySymbol) {
+  // --- FIX: Removed currencySymbol parameter ---
+  void _showAddServiceDialog(BuildContext context, WidgetRef ref) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -357,7 +356,8 @@ class _AddEditRepairJobScreenState extends ConsumerState<AddEditRepairJobScreen>
           builder: (context, ref, _) {
             final servicesAsync = ref.watch(serviceListProvider);
             final notifier = ref.read(addEditRepairJobNotifierProvider(widget.repairJobId).notifier);
-            final numberFormat = NumberFormat.currency(symbol: '$currencySymbol ');
+            // --- FIX: Use the new currencyFormatterProvider ---
+            final currencyFormatter = ref.watch(currencyFormatterProvider);
             
             return AlertDialog(
               title: const Text('Add Service'),
@@ -392,7 +392,8 @@ class _AddEditRepairJobScreenState extends ConsumerState<AddEditRepairJobScreen>
                                   children: serviceItems.map((service) {
                                     return ListTile(
                                       title: Text(service.name),
-                                      trailing: Text(numberFormat.format(service.price)),
+                                      // --- FIX: Use the new formatter ---
+                                      trailing: Text(currencyFormatter.format(service.price)),
                                       onTap: () {
                                         final jobItems = ref.read(addEditRepairJobNotifierProvider(widget.repairJobId)).items;
                                         final existingItem = jobItems.firstWhereOrNull((item) => item.itemType == 'Service' && item.linkedItemId == service.id);
@@ -608,20 +609,19 @@ class _AddEditRepairJobScreenState extends ConsumerState<AddEditRepairJobScreen>
 
 class _BottomActionBar extends StatelessWidget {
   final bool isNewJob;
-  final bool canSave; // UPDATED: Replaced hasChanges with canSave
+  final bool canSave;
   final VoidCallback onCancel;
   final VoidCallback onCreate;
 
   const _BottomActionBar({
     required this.isNewJob,
-    required this.canSave, // UPDATED
+    required this.canSave,
     required this.onCancel,
     required this.onCreate,
   });
 
   @override
   Widget build(BuildContext context) {
-    // REMOVED: Internal logic is no longer needed.
     final buttonText = isNewJob ? 'Create Repair Job' : 'Update Repair Job';
     final theme = Theme.of(context);
 
@@ -644,7 +644,7 @@ class _BottomActionBar extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
           ElevatedButton(
-            onPressed: canSave ? onCreate : null, // UPDATED: Use canSave directly
+            onPressed: canSave ? onCreate : null,
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blue.shade700, 
               foregroundColor: Colors.white, 
@@ -666,16 +666,15 @@ class _BottomActionBar extends StatelessWidget {
   }
 }
 
+// --- FIX: Removed currencySymbol parameter ---
 class _EditableItemsList extends ConsumerStatefulWidget {
   final List<RepairJobItem> items;
   final int? jobId;
-  final String currencySymbol;
 
   const _EditableItemsList({
     super.key, 
     required this.items, 
-    this.jobId, 
-    required this.currencySymbol,
+    this.jobId,
   });
 
   @override

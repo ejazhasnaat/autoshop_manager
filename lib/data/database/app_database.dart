@@ -9,6 +9,19 @@ import 'package:stream_transform/stream_transform.dart';
 
 part 'app_database.g.dart';
 
+// --- ADDED: UserDao for user-specific database operations ---
+@DriftAccessor(tables: [Users])
+class UserDao extends DatabaseAccessor<AppDatabase> with _$UserDaoMixin {
+  UserDao(AppDatabase db) : super(db);
+
+  Stream<List<User>> watchAllUsers() => select(users).watch();
+  Future<User?> getUser(String username) => (select(users)..where((u) => u.username.equals(username))).getSingleOrNull();
+  Future<int> insertUser(UsersCompanion user) => into(users).insert(user);
+  Future<bool> updateUser(UsersCompanion user) => update(users).replace(user);
+  Future<int> deleteUser(int id) => (delete(users)..where((u) => u.id.equals(id))).go();
+}
+
+// ... (ShopSettings, Users, and other tables remain the same) ...
 @DataClassName('ShopSetting')
 class ShopSettings extends Table {
   IntColumn get id => integer().withDefault(const Constant(1))();
@@ -311,7 +324,7 @@ class RepairJobItemWithDetails {
     RepairJobs, RepairJobItems
   ], 
   daos: [
-    VehicleDao, ServiceHistoryDao, RepairJobDao
+    UserDao, VehicleDao, ServiceHistoryDao, RepairJobDao
   ]
 )
 class AppDatabase extends _$AppDatabase {

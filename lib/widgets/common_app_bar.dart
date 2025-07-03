@@ -1,6 +1,8 @@
 // lib/widgets/common_app_bar.dart
-import 'package:autoshop_manager/features/settings/presentation/workshop_settings_providers.dart';
+import 'package:autoshop_manager/features/about/presentation/screens/about_screen.dart';
+import 'package:autoshop_manager/features/settings/presentation/settings_providers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:autoshop_manager/features/auth/presentation/auth_providers.dart';
@@ -21,7 +23,6 @@ class CommonAppBar extends ConsumerWidget implements PreferredSizeWidget {
     this.bottom,
   });
 
-  // Helper function to generate initials from a name
   String _getInitials(String name) {
     if (name.trim().isEmpty) return '?';
     final parts = name
@@ -43,7 +44,7 @@ class CommonAppBar extends ConsumerWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authNotifierProvider);
-    final shopSettingsAsync = ref.watch(workshopSettingsProvider);
+    final shopSettingsAsync = ref.watch(shopSettingsProvider);
     final theme = Theme.of(context);
 
     Widget leadingButton;
@@ -51,7 +52,13 @@ class CommonAppBar extends ConsumerWidget implements PreferredSizeWidget {
       leadingButton = IconButton(
         icon: const Icon(Icons.close),
         tooltip: 'Close',
-        onPressed: () => context.pop(),
+        onPressed: () {
+          if (context.canPop()) {
+            context.pop();
+          } else {
+            context.go('/home');
+          }
+        },
       );
     } else if (showBackButton) {
       leadingButton = IconButton(
@@ -82,7 +89,6 @@ class CommonAppBar extends ConsumerWidget implements PreferredSizeWidget {
       titleSpacing: 0,
       title: Row(
         children: [
-          // --- Left Section ---
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -99,7 +105,6 @@ class CommonAppBar extends ConsumerWidget implements PreferredSizeWidget {
               ],
             ],
           ),
-          // --- UPDATED: Center Section with Logo and Text ---
           Expanded(
             child: Center(
               child: Row(
@@ -107,10 +112,10 @@ class CommonAppBar extends ConsumerWidget implements PreferredSizeWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Image.asset(
-                    'assets/images/app_logo.png', // Using path from your baseline file
+                    'assets/images/app_logo.png',
                     height: 40,
                     errorBuilder: (context, error, stackTrace) {
-                      return const Icon(Icons.miscellaneous_services); // Fallback icon
+                      return const Icon(Icons.miscellaneous_services);
                     },
                   ),
                   const SizedBox(width: 12),
@@ -135,12 +140,10 @@ class CommonAppBar extends ConsumerWidget implements PreferredSizeWidget {
               ),
             ),
           ),
-          // --- UPDATED: Right Section with Workshop Info, User Initials, and Settings Icon ---
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               if (customActions != null) ...customActions!,
-              // Workshop Info
               shopSettingsAsync.when(
                 data: (settings) => Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -160,7 +163,6 @@ class CommonAppBar extends ConsumerWidget implements PreferredSizeWidget {
                 error: (e, s) => const SizedBox.shrink(),
               ),
               const SizedBox(width: 12),
-              // User Initials
               CircleAvatar(
                 radius: 18,
                 backgroundColor: theme.colorScheme.primaryContainer,
@@ -174,54 +176,39 @@ class CommonAppBar extends ConsumerWidget implements PreferredSizeWidget {
                 ),
               ),
               const SizedBox(width: 4),
-              // Settings Menu Button
               PopupMenuButton<String>(
-                tooltip: 'Settings Menu',
-                icon: const Icon(Icons.settings_outlined), // Using settings icon
+                tooltip: 'Options',
+                icon: const Icon(Icons.menu),
                 onSelected: (String result) async {
                   if (result == 'logout') {
                     await ref.read(authNotifierProvider.notifier).logout();
                     if (context.mounted) context.go('/login');
-                  } else if (result == 'workshop_settings') {
-                    context.push('/settings/workshop');
-                  } else if (result == 'manage_users') {
-                    context.go('/signup');
-                  } else if (result == 'reminder_intervals') {
-                    context.push('/reminders/intervals');
-                  } else if (result == 'settings') {
-                    context.push('/settings');
+                  } else if (result == 'close') {
+                    SystemNavigator.pop();
+                  } else if (result == 'about') {
+                    showDialog(
+                      context: context,
+                      builder: (_) => const AppAboutDialog(),
+                    );
                   }
                 },
                 itemBuilder: (BuildContext context) {
-                  final List<PopupMenuEntry<String>> menuItems = [];
-                  if (authState.isAdmin) {
-                    menuItems.addAll([
-                      const PopupMenuItem<String>(
-                        value: 'workshop_settings',
-                        child: Text('Workshop Settings'),
-                      ),
-                      const PopupMenuItem<String>(
-                        value: 'settings',
-                        child: Text('App Settings'),
-                      ),
-                      const PopupMenuItem<String>(
-                        value: 'manage_users',
-                        child: Text('Manage Users'),
-                      ),
-                      const PopupMenuItem<String>(
-                        value: 'reminder_intervals',
-                        child: Text('Reminder Intervals'),
-                      ),
-                    ]);
-                  }
-                  menuItems.addAll([
-                    if (authState.isAdmin) const PopupMenuDivider(),
+                  return [
                     const PopupMenuItem<String>(
                       value: 'logout',
                       child: Text('Logout'),
                     ),
-                  ]);
-                  return menuItems;
+                    const PopupMenuDivider(),
+                    const PopupMenuItem<String>(
+                      value: 'close',
+                      child: Text('Close App'),
+                    ),
+                    const PopupMenuDivider(),
+                    const PopupMenuItem<String>(
+                      value: 'about',
+                      child: Text('About'),
+                    ),
+                  ];
                 },
               ),
               const SizedBox(width: 8),
