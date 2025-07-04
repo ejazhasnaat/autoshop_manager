@@ -35,11 +35,19 @@ class QuickActionsPanel extends StatelessWidget {
               onTap: () => context.go('/customers/add?from=/home'),
             ),
             _QuickActionButton(
+              icon: Icons.event_available_outlined,
+              color: Colors.cyan,
+              title: 'New Appointment',
+              subtitle: 'Schedule a new client visit',
+              // --- FIXED: Changed context.go to context.push ---
+              onTap: () => context.push('/appointments/add'),
+            ),
+            _QuickActionButton(
               icon: Icons.calendar_today_outlined,
               color: Colors.deepPurple,
               title: 'Schedule',
               subtitle: 'View appointments',
-              onTap: () {},
+              onTap: () => context.go('/schedule'),
             ),
             _QuickActionButton(
               icon: Icons.notifications_active_outlined,
@@ -122,7 +130,6 @@ class _QuickActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // --- UPDATED: Each action is now a Card for a distinct, bordered look ---
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(

@@ -21,6 +21,9 @@ import 'package:autoshop_manager/features/reminders/presentation/screens/manage_
 import 'package:autoshop_manager/features/reminders/presentation/screens/reminder_intervals_screen.dart';
 import 'package:autoshop_manager/features/reminders/presentation/screens/reminders_screen.dart';
 import 'package:autoshop_manager/features/reports/presentation/screens/reports_screen.dart';
+import 'package:autoshop_manager/features/schedule/presentation/screens/schedule_screen.dart';
+// --- ADDED: Import for the new appointment screen ---
+import 'package:autoshop_manager/features/schedule/presentation/screens/add_edit_appointment_screen.dart';
 import 'package:autoshop_manager/features/service/presentation/screens/add_edit_service_screen.dart';
 import 'package:autoshop_manager/features/service/presentation/screens/service_list_screen.dart';
 import 'package:autoshop_manager/features/settings/presentation/screens/settings_screen.dart';
@@ -65,6 +68,12 @@ final routerProvider = Provider<GoRouter>((ref) {
           builder: (context, state) => const InitialSetupScreen()),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
+      GoRoute(path: '/schedule', builder: (context, state) => const ScheduleScreen()),
+      // --- ADDED: Route for creating a new appointment ---
+      GoRoute(
+        path: '/appointments/add',
+        builder: (context, state) => const AddEditAppointmentScreen(),
+      ),
       GoRoute(
           path: '/customers',
           builder: (context, state) => const CustomerListScreen(),
@@ -241,4 +250,3 @@ class GoRouterRefreshStream extends ChangeNotifier {
     super.dispose();
   }
 }
-

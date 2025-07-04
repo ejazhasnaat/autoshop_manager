@@ -1,5 +1,8 @@
 // lib/data/database/app_database.dart
+import 'dart:convert';
 import 'dart:io';
+import 'package:autoshop_manager/data/database/app_database.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 import 'package:drift/drift.dart';
@@ -9,7 +12,6 @@ import 'package:stream_transform/stream_transform.dart';
 
 part 'app_database.g.dart';
 
-// --- ADDED: UserDao for user-specific database operations ---
 @DriftAccessor(tables: [Users])
 class UserDao extends DatabaseAccessor<AppDatabase> with _$UserDaoMixin {
   UserDao(AppDatabase db) : super(db);
@@ -21,7 +23,6 @@ class UserDao extends DatabaseAccessor<AppDatabase> with _$UserDaoMixin {
   Future<int> deleteUser(int id) => (delete(users)..where((u) => u.id.equals(id))).go();
 }
 
-// ... (ShopSettings, Users, and other tables remain the same) ...
 @DataClassName('ShopSetting')
 class ShopSettings extends Table {
   IntColumn get id => integer().withDefault(const Constant(1))();
@@ -156,7 +157,6 @@ class RepairJobs extends Table {
   DateTimeColumn get creationDate => dateTime()();
   DateTimeColumn get completionDate => dateTime().nullable()();
   TextColumn get status => text()();
-  // --- ADDED: New column for job priority ---
   TextColumn get priority => text().withDefault(const Constant('Normal'))();
   RealColumn get totalAmount => real().withDefault(const Constant(0.0))();
   TextColumn get notes => text().nullable()();
@@ -171,6 +171,19 @@ class RepairJobItems extends Table {
   TextColumn get description => text()();
   IntColumn get quantity => integer()();
   RealColumn get unitPrice => real()();
+}
+
+@DataClassName('Appointment')
+class Appointments extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get customerId => integer().references(Customers, #id)();
+  IntColumn get vehicleId => integer().references(Vehicles, #id)();
+  DateTimeColumn get appointmentDate => dateTime()();
+  IntColumn get durationInMinutes => integer().withDefault(const Constant(120))();
+  TextColumn get technicianName => text().nullable()();
+  TextColumn get servicesDescription => text()();
+  TextColumn get status => text().withDefault(const Constant('pending'))(); // e.g., pending, confirmed, rescheduled, cancelled
+  TextColumn get notes => text().nullable()();
 }
 
 @DriftAccessor(tables: [ServiceHistories])
@@ -269,6 +282,43 @@ class RepairJobDao extends DatabaseAccessor<AppDatabase> with _$RepairJobDaoMixi
   }
 }
 
+@DriftAccessor(tables: [Appointments, Customers, Vehicles])
+class AppointmentDao extends DatabaseAccessor<AppDatabase> with _$AppointmentDaoMixin {
+  AppointmentDao(AppDatabase db) : super(db);
+
+  Stream<List<AppointmentWithDetails>> watchAppointmentsForDate(DateTime date) {
+    final query = select(appointments)
+      ..where((a) => a.appointmentDate.year.equals(date.year))
+      ..where((a) => a.appointmentDate.month.equals(date.month))
+      ..where((a) => a.appointmentDate.day.equals(date.day))
+      ..orderBy([(a) => OrderingTerm(expression: a.appointmentDate)]);
+      
+    return query.join([
+      innerJoin(customers, customers.id.equalsExp(appointments.customerId)),
+      innerJoin(vehicles, vehicles.id.equalsExp(appointments.vehicleId)),
+    ]).watch().map((rows) => rows.map((row) {
+      return AppointmentWithDetails(
+        appointment: row.readTable(appointments),
+        customer: row.readTable(customers),
+        vehicle: row.readTable(vehicles),
+      );
+    }).toList());
+  }
+
+  Stream<List<DateTime>> watchAllAppointmentDates() {
+    final query = selectOnly(appointments, distinct: true)
+      ..addColumns([appointments.appointmentDate.date]);
+    
+    // --- FIXED: Parse the string from the DB into a DateTime object ---
+    return query.watch().map((rows) {
+      return rows.map((row) {
+        final dateString = row.read(appointments.appointmentDate.date)!;
+        return DateTime.parse(dateString);
+      }).toList();
+    });
+  }
+}
+
 class RepairJobWithCustomer {
   final RepairJob repairJob;
   final Vehicle vehicle;
@@ -310,6 +360,12 @@ class RepairJobWithDetails {
       otherItems.fold<double>(0, (sum, item) => sum + (item.unitPrice * item.quantity));
 }
 
+class AppointmentWithDetails {
+  final Appointment appointment;
+  final Customer customer;
+  final Vehicle vehicle;
+  AppointmentWithDetails({required this.appointment, required this.customer, required this.vehicle});
+}
 
 class RepairJobItemWithDetails {
   final RepairJobItem repairJobItem;
@@ -321,10 +377,12 @@ class RepairJobItemWithDetails {
   tables: [
     Users, InventoryItems, Customers, Vehicles, Orders, OrderItems,
     Services, VehicleModels, ServiceHistories, MessageTemplates, ShopSettings,
-    RepairJobs, RepairJobItems
+    RepairJobs, RepairJobItems,
+    Appointments
   ], 
   daos: [
-    UserDao, VehicleDao, ServiceHistoryDao, RepairJobDao
+    UserDao, VehicleDao, ServiceHistoryDao, RepairJobDao,
+    AppointmentDao
   ]
 )
 class AppDatabase extends _$AppDatabase {
@@ -337,13 +395,12 @@ class AppDatabase extends _$AppDatabase {
   }
   
   @override
-  int get schemaVersion => 15;
+  int get schemaVersion => 16;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (Migrator m) async {
       await m.createAll();
-      await into(shopSettings).insert(const ShopSettingsCompanion());
     },
     onUpgrade: (Migrator m, int from, int to) async {
       if (from < 9) {
@@ -369,14 +426,36 @@ class AppDatabase extends _$AppDatabase {
         await m.createTable(repairJobItems);
         await m.addColumn(serviceHistories, serviceHistories.repairJobId);
       }
-      // --- ADDED: Migration step to add the new 'priority' column ---
       if (from < 15) {
         await m.addColumn(repairJobs, repairJobs.priority);
+      }
+      if (from < 16) {
+        await m.createTable(appointments);
       }
     },
     beforeOpen: (details) async {
       if (details.wasCreated) {
         await into(shopSettings).insert(const ShopSettingsCompanion());
+        
+        try {
+          final jsonString = await rootBundle.loadString('assets/vehicle_models.json');
+          final List<dynamic> jsonList = json.decode(jsonString);
+          final models = jsonList.map((json) {
+            return VehicleModelsCompanion.insert(
+              make: json['make'] as String,
+              model: json['model'] as String,
+              yearFrom: json['yearFrom'] != null ? Value(json['yearFrom'] as int) : const Value.absent(),
+              yearTo: json['yearTo'] != null ? Value(json['yearTo'] as int) : const Value.absent(),
+            );
+          }).toList();
+
+          await batch((batch) {
+            batch.insertAll(vehicleModels, models);
+          });
+          print('Successfully seeded vehicle models into the database.');
+        } catch (e) {
+          print('Error seeding vehicle models: $e');
+        }
       }
     },
   );
@@ -389,4 +468,3 @@ LazyDatabase _openConnection() {
     return NativeDatabase(file);
   });
 }
-
